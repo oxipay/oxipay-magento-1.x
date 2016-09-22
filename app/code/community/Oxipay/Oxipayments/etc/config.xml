@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<config>
+    <modules>
+        <Oxipay_Oxipayments>
+            <version>0.1.0</version>
+        </Oxipay_Oxipayments>
+    </modules>
+    <frontend>
+        <routers>
+            <oxipayments>
+                <use>standard</use>
+                <args>
+                    <module>Oxipay_Oxipayments</module>
+                    <frontName>oxipayments</frontName>
+                </args>
+            </oxipayments>
+        </routers>
+    </frontend>
+</config>
