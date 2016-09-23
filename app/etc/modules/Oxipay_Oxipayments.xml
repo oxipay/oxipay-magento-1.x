@@ -4,6 +4,9 @@
         <Oxipay_Oxipayments>
             <active>true</active>
             <codePool>community</codePool>
+            <depends>
+                <Mage_Payment />
+            </depends>
         </Oxipay_Oxipayments>
     </modules>
 </config>

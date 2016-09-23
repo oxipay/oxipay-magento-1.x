@@ -3,6 +3,6 @@ class Oxipay_Oxipayments_IndexController extends Mage_Core_Controller_Front_Acti
 {
     public function indexAction()
     {
-        echo "Hello world";
+//        echo "Hello world";
     }
 }

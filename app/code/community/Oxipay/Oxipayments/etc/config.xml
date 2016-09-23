@@ -5,6 +5,48 @@
             <version>0.1.0</version>
         </Oxipay_Oxipayments>
     </modules>
+
+    <global>
+        <helpers>
+            <oxipayments>
+                <class>Oxipay_Oxipayments_Helper</class>
+            </oxipayments>
+        </helpers>
+
+        <blocks>
+            <oxipayments>
+                <class>Oxipay_Oxipayments_Block</class>
+            </oxipayments>
+        </blocks>
+
+        <models>
+            <oxipayments>
+                <class>Oxipay_Oxipayments_Model</class>
+            </oxipayments>
+        </models>
+
+        <resources>
+            <oxipayments_setup>
+                <setup>
+                    <module>Oxipay_Oxipayments</module>
+                </setup>
+            </oxipayments_setup>
+        </resources>
+    </global>
+
+    <default>
+        <payment>
+            <oxipayments>
+                <active>1</active>
+                <model>oxipayments/paymentmethod</model>
+                <order_status>pending</order_status>
+                <title>Oxipay</title>
+                <allowspecific>0</allowspecific>
+                <payment_action>sale</payment_action>
+            </oxipayments>
+        </payment>
+    </default>
+
     <frontend>
         <routers>
             <oxipayments>
