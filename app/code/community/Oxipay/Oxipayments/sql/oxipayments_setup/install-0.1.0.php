@@ -8,5 +8,7 @@
 $installer = $this;
 
 $installer->startSetup();
-//$installer->run("");
+$installer->run("
+  --DATABASE CHANGES GO HERE IF REQ'D
+");
 $installer->endSetup();
