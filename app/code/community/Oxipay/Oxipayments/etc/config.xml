@@ -1,31 +1,38 @@
 <?xml version="1.0"?>
 <config>
+
+    <!-- Module Metadata -->
     <modules>
         <Oxipay_Oxipayments>
             <version>0.1.0</version>
         </Oxipay_Oxipayments>
     </modules>
+    <!-- End Module Metadata -->
 
+    <!-- Dependency Injection Configuration -->
     <global>
+        <!-- <module root>/Helper/Data.php -->
         <helpers>
             <oxipayments>
                 <class>Oxipay_Oxipayments_Helper</class>
             </oxipayments>
         </helpers>
 
+        <!-- Partial View Controllers -->
         <blocks>
             <oxipayments>
+                <!-- <module root>/[Form|Info]/Oxipayments.php -->
                 <class>Oxipay_Oxipayments_Block</class>
             </oxipayments>
         </blocks>
-
         <models>
+            <!-- <module root/Model/Paymentmethod.php -->
             <oxipayments>
                 <class>Oxipay_Oxipayments_Model</class>
             </oxipayments>
         </models>
-
         <resources>
+            <!-- <module root/sql/oxipayments_setup/install-<version number>.php -->
             <oxipayments_setup>
                 <setup>
                     <module>Oxipay_Oxipayments</module>
@@ -33,7 +40,9 @@
             </oxipayments_setup>
         </resources>
     </global>
+    <!-- End Dependency Injection Configuration -->
 
+    <!-- Payment Method Default Configuration Values -->
     <default>
         <payment>
             <oxipayments>
@@ -43,10 +52,17 @@
                 <title>Oxipay</title>
                 <allowspecific>0</allowspecific>
                 <payment_action>sale</payment_action>
+                <gateway_base_url>http://localhost:60343</gateway_base_url>
+                <gateway_checkout_url>Checkout/Process?platform=Magento</gateway_checkout_url>
+                <merchant_number>30166666</merchant_number>
+                <api_key>TEST</api_key>
+                <test_mode>1</test_mode>
             </oxipayments>
         </payment>
     </default>
+    <!-- End Payment Method Default Configuration Values -->
 
+    <!-- Routing Configuration -->
     <frontend>
         <routers>
             <oxipayments>
@@ -58,5 +74,5 @@
             </oxipayments>
         </routers>
     </frontend>
-
+    <!-- End Routing Configuration -->
 </config>

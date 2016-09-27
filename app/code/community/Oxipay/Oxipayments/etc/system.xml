@@ -1,16 +1,5 @@
 <?xml version="1.0"?>
 <config>
-    <default>
-        <payment>
-            <oxipayments>
-                <gateway_base_url>http://localhost:60343</gateway_base_url>
-                <gateway_checkout_url>/Checkout/Process?platform=Magento</gateway_checkout_url>
-                <merchant_number>30166666</merchant_number>
-                <api_key>TEST</api_key>
-                <test_mode>1</test_mode>
-            </oxipayments>
-        </payment>
-    </default>
     <sections>
         <payment>
             <groups>
