@@ -1,59 +1,75 @@
 <?php
-class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Action
+
+class Oxipay_Oxipayments_PaymentController extends ControllerBase
 {
-    private $_logFile = 'oxipay.log';
+    /**
+     * GET: /oxipayments/payment/start
+     *
+     * Begin processing payment via oxipay
+     */
     public function startAction()
     {
+        $this->validateQuote();
 
         try {
-            $gatewayUrl = Oxipay_Oxipayments_Helper_Data::getTransactionIdUrl();
-            $httpClient = new Zend_Http_Client($gatewayUrl);
-            $payload = $this->getPayload();
-            $transactionId = $this->getTransactionId($httpClient, $payload);
-            //todo: save transaction id against order
-            //$order = Mage::getModel('sales/order');
-            //$order->setData('transaction_id', $transactionId);
-            //$order->save();
 
-            $checkoutUrl = Oxipay_Oxipayments_Helper_Data::getCheckoutUrl();
-            echo "<html><body><form id='form' action='$checkoutUrl' method='post'>";
-            foreach($payload as $key => $value) {
-                echo "<input type='hidden' id='$key' name='$key' value='$value'/>";
-            }
-            echo '</form></body>';
-            echo '<script>
-            var form = document.getElementById("form");
-            form.submit();
-            </script></html>';
+            $payload = $this->getPayload();
+            $transactionId = $this->getTransactionId($payload);
+
+            $order = $this->getOrder();
+            $payment = $order->getPayment();
+            $payment->setTransactionId($transactionId);
+            $order->setTransactionId($transactionId);
+            $order->setState(Mage_Sales_Model_Order::STATE_PROCESSING, true, 'Oxipay authorization processing.');
+            $this->postToCheckout(Helper::getCheckoutUrl(), $payload);
+
         } catch(Exception $ex) {
             Mage::logException($ex);
-            Mage::log('An exception was encountered in oxipayments/paymentcontroller: ' . $ex->getMessage(), null, $this->_logFile);
-            Mage::log($ex->getTraceAsString(), null, $this->_logFile);
-        }
-    }
-
-    public function callbackAction() {
-        var_dump($this->getRequest());
-        //todo: signature check
-        //if bad fail
-        //else
-        if ($this->getRequest()->get("flag") == "1" && $this->getRequest()->get("orderId"))
-        {
-            $orderId = $this->getRequest()->get("orderId");
-            $order = Mage::getModel('sales/order')->loadByIncrementId($orderId);
-           // $order->setState(Mage_Sales_Model_Order::STATE_PAYMENT_REVIEW, true, 'Payment Success.');
-            $order->save();
-
-            Mage::getSingleton('checkout/session')->unsQuoteId();
-            Mage_Core_Controller_Varien_Action::_redirect('checkout/onepage/success', array('_secure'=> false));
-        }
-        else
-        {
-            Mage_Core_Controller_Varien_Action::_redirect('checkout/onepage/error', array('_secure'=> false));
+            Mage::log('An exception was encountered in oxipayments/paymentcontroller: ' . $ex->getMessage(), Zend_Log::ERR, self::LOG_FILE);
+            Mage::log($ex->getTraceAsString(), Zend_Log::ERR, self::LOG_FILE);
         }
     }
 
     /**
+     * GET: oxipayments/payment/approve
+     *
+     * async callback - oxipay calls this once payment has been approved.
+     */
+    public function approveAction() {
+        $isValid = Helper::isValidSignature($this->getRequest()->getParams(), $this->_getApiKey());
+
+        if(!$isValid) {
+            Mage::log('Possible site forgery detected: invalid response signature.', Zend_Log::ALERT, self::LOG_FILE);
+            $this->_redirect('checkout/onepage/error', array('_secure'=> false));
+            return;
+        }
+
+        if ($this->getRequest()->get("flag") == "1" && $this->getRequest()->get("orderId"))
+        {
+            $orderId = $this->getRequest()->get("orderId");
+            $order = $this->_getOrderById($orderId);
+            $order->setState(Mage_Sales_Model_Order::STATE_PAYMENT_REVIEW, true, 'Oxipay authorization Success.');
+            $order->save();
+
+            Mage::getSingleton('checkout/session')->unsQuoteId();
+            $this->_redirect('checkout/onepage/success', array('_secure'=> false));
+        }
+        else
+        {
+            $this->_redirect('checkout/onepage/error', array('_secure'=> false));
+        }
+    }
+
+    /**
+     * GET: oxipayments/payment/cancel
+     * async callback - oxipay calls this once a payment has been cancelled.
+     */
+    public function cancelAction() {
+
+    }
+
+    /**
+     * Constructs a request payload to send to oxipay
      * @return array
      */
     private function getPayload() {
@@ -88,43 +104,12 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
             'x_customer_shipping_zip' => $shippingAddress->getData('postcode'),
             'x_test' => Mage::getStoreConfig('payment/oxipayments/test_mode')
         );
-        $apiKey = Mage::getStoreConfig('payment/oxipayments/api_key');
+        $apiKey = $this->_getApiKey();
         $signature = Oxipay_Oxipayments_Helper_Data::generateSignature($data, $apiKey);
         $data['x_signature'] = $signature;
 
         return $data;
     }
 
-    /**
-     * @param $httpClient
-     */
-    private function getTransactionId(Zend_Http_Client $httpClient, $payload)
-    {
-        $httpClient->setParameterPost($payload);
 
-        $response = $httpClient
-            ->setHeaders("Content-Type: application/x-www-form-urlencoded")
-            ->request(Zend_Http_Client::POST);
-
-        if ($response === FALSE) {
-            Mage::log('No response from the oxipay API. Please check internet connectivity.', null, $this->_logFile);
-            //todo: redirect to cart
-        }
-
-        return $response->getBody();
-    }
 }
-
-// transaction
-//        $checkout = Mage::getSingleton('core/session', array('name'=>'frontend'));
-//        var_dump($checkout);
-//
-//        $checkout2 = Mage::getSingleton('checkout/session')->getQuote();
-//        var_dump($checkout2);
-//
-//        $checkout3 = Mage::getSingleton('checkout/session')->getOrder();
-
-
-
-
-//

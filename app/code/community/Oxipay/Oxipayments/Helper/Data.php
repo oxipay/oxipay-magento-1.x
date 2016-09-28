@@ -7,15 +7,13 @@
  */
 class Oxipay_Oxipayments_Helper_Data extends Mage_Core_Helper_Abstract
 {
-    /**
-     * get the URL of the configured oxipay gateway
-     * @return string
-     */
-    public static function getGatewayUrl()
+    public static $gatewayBaseUrl;
+    public static $gatewayRoute;
+
+    public static function init()
     {
-        $gatewayBaseUrl = Mage::getStoreConfig('payment/oxipayments/gateway_base_url');
-        $gatewayRoute = Mage::getStoreConfig('payment/oxipayments/gateway_checkout_url');
-        return "$gatewayBaseUrl/$gatewayRoute";
+        self::$gatewayBaseUrl = Mage::getStoreConfig('payment/oxipayments/gateway_base_url');
+        self::$gatewayRoute = Mage::getStoreConfig('payment/oxipayments/gateway_checkout_url');
     }
 
     /**
@@ -23,8 +21,8 @@ class Oxipay_Oxipayments_Helper_Data extends Mage_Core_Helper_Abstract
      * @return string
      */
     public static function getTransactionIdUrl() {
-        $gatewayBaseUrl = Mage::getStoreConfig('payment/oxipayments/gateway_base_url');
-        return "$gatewayBaseUrl/Checkout/Process?platform=Magento";
+
+        return self::$gatewayBaseUrl . self::$gatewayRoute . '/Process?platform=Magento';
     }
 
     /**
@@ -32,29 +30,21 @@ class Oxipay_Oxipayments_Helper_Data extends Mage_Core_Helper_Abstract
      * @return string
      */
     public static function getCheckoutUrl() {
-        $gatewayBaseUrl = Mage::getStoreConfig('payment/oxipayments/gateway_base_url');
-        return "$gatewayBaseUrl/Checkout?platform=magento";
+        return self::$gatewayBaseUrl . self::$gatewayRoute . '?platform=magento';
     }
 
     /**
      * @return string
      */
     public static function getCompleteUrl() {
-        return Mage::getBaseUrl() . '/checkout/onepage/success';
+        return Mage::getBaseUrl() . 'oxipayments/payment/complete';
     }
 
     /**
      * @return string
      */
     public static function getCancelledUrl() {
-        return Mage::getBaseUrl() . 'checkout/onepage/failure';
-    }
-
-    /**
-     * @return string
-     */
-    public static function getCallbackUrl() {
-        return Mage::getBaseUrl() . 'oxipayments/payment/callback';
+        return Mage::getBaseUrl() . 'oxipayments/payment/cancelled';
     }
 
     /**
@@ -84,9 +74,10 @@ class Oxipay_Oxipayments_Helper_Data extends Mage_Core_Helper_Abstract
      */
     public static function isValidSignature($query, $api_key) {
         $actualSignature = $query['x_signature'];
-        $query['x_signature'] = null;
+        unset($query['x_signature']);
 
         $expectedSignature = self::generateSignature($query, $api_key);
         return $actualSignature == $expectedSignature;
     }
 }
+Oxipay_Oxipayments_Helper_Data::init();
