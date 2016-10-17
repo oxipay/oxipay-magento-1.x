@@ -1,0 +1,35 @@
+/*
+!app
+app/*
+
+# code
+!app/code
+app/code/*
+!app/code/community
+app/code/community/*
+!app/code/community/Oxipay
+
+# design
+!app/design
+app/design/*
+!app/design/frontend/
+app/design/frontend/*
+!app/design/frontend/base
+app/design/frontend/base/*
+!app/design/frontend/base/default
+app/design/frontend/base/default/*
+!app/design/frontend/base/default/template
+app/design/frontend/base/default/template/*
+!app/design/frontend/base/default/template/oxipayments
+
+# etc
+!app/etc
+app/etc/*
+!app/etc/modules/
+app/etc/modules/*
+!app/etc/modules/Oxipay_Oxipayments.xml
+
+# tests
+!test
+
+!.gitignore
