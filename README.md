@@ -12,3 +12,9 @@ cp ~/oxipay/app/* /path/to/magento/app
 ```
 
 Once copied - you should be able to see the oxipay plugin loaded in magento (note this may require a cache flush/site reload)
+
+## Varnish cache exclusions
+
+A rule must be added to varnish configuration for any magento installation running behind a varnish backend. (Or any other proxy cache) to invalidate any payment controller action.
+
+Must exclude: `.*oxipayments.`* from all caching.
