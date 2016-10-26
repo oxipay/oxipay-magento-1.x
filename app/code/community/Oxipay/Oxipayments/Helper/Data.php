@@ -17,20 +17,15 @@ class Oxipay_Oxipayments_Helper_Data extends Mage_Core_Helper_Abstract
     }
 
     /**
-     * get the URL of the configured oxipay gateways transaction id processing action
-     * @return string
-     */
-    public static function getTransactionIdUrl() {
-
-        return self::$gatewayBaseUrl . self::$gatewayRoute . '/Process?platform=Magento';
-    }
-
-    /**
      * get the URL of the configured oxipay gateway checkout
      * @return string
      */
     public static function getCheckoutUrl() {
-        return self::$gatewayBaseUrl . self::$gatewayRoute . '?platform=magento';
+        $scheme = parse_url(self::$gatewayBaseUrl, PHP_URL_SCHEME);
+        $host = parse_url(self::$gatewayBaseUrl, PHP_URL_HOST);
+        $port = parse_url(self::$gatewayBaseUrl, PHP_URL_PORT);
+
+        return "$scheme://$host:$port/Checkout?platform=magento";
     }
 
     /**
@@ -54,17 +49,16 @@ class Oxipay_Oxipayments_Helper_Data extends Mage_Core_Helper_Abstract
      * @return string
      */
     public static function generateSignature($query, $api_key ) {
-        //step 1: order by key_name ascending
         $clear_text = '';
         ksort($query);
         foreach ($query as $key => $value) {
             $clear_text .= $key . $value;
         }
-        $hash = base64_encode(hash_hmac( "sha256", $clear_text, $api_key . '&', true ));
+        $clear_text = str_replace(PHP_EOL, '', $clear_text);
+        $hash = base64_encode(hash_hmac( "sha256", $clear_text, $api_key, true ));
         $hash = str_replace('+', '', $hash);
         return $hash;
     }
-
 
     /**
      * validates and associative array that contains a hmac signature against an api key
