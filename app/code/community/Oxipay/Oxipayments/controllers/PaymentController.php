@@ -2,8 +2,8 @@
 
 class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Action
 {
-
     const LOG_FILE = 'oxipay.log';
+
     /**
      * GET: /oxipayments/payment/start
      *
@@ -27,6 +27,28 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
             Mage::log($ex->getTraceAsString(), Zend_Log::ERR, self::LOG_FILE);
             $this->_getCheckoutSession()->addError($this->__('Unable to start Oxipay Checkout.'));
         }
+    }
+
+    /**
+     * GET: /oxipayments/payment/cancel
+     * Cancel an order given an order id
+     */
+    public function cancelAction()
+    {
+        $orderId = $this->getRequest()->get('orderId');
+        $order =  $this->getOrderById($orderId);
+
+        if ($order && $order->getId()) {
+            Mage::log(
+                'Requested order cancellation by customer. OrderId: ' . $order->getIncrementId(),
+                Zend_Log::DEBUG,
+                self::LOG_FILE
+            );
+            $this->cancelOrder($order);
+            $this->restoreCart($order);
+            $order->save();
+        }
+        $this->_redirect('checkout/cart');
     }
 
     /**
@@ -95,14 +117,15 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
         $shippingAddress = $order->getShippingAddress();
         $billingAddress = $order->getBillingAddress();
 
+        $orderId = $order->getRealOrderId();
         $data = array(
             'x_currency' => 'AU',
             'x_url_complete' => Oxipay_Oxipayments_Helper_Data::getCompleteUrl(),
-            'x_url_cancel' => Oxipay_Oxipayments_Helper_Data::getCancelledUrl(),
+            'x_url_cancel' => Oxipay_Oxipayments_Helper_Data::getCancelledUrl($orderId),
             'x_shop_name' => Mage::app()->getStore()->getCode(),
             'x_account_id' => Mage::getStoreConfig('payment/oxipayments/merchant_number'),
-            'x_reference' => $order->getRealOrderId(),
-            'x_invoice' => $order->getRealOrderId(),
+            'x_reference' => $orderId,
+            'x_invoice' => $orderId,
             'x_amount' => $order->getTotalDue(),
             'x_customer_first_name' => $order->getCustomerFirstname(),
             'x_customer_last_name' => $order->getCustomerLastname(),
@@ -128,9 +151,10 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
     }
 
     /**
+     * checks the quote for validity
      * @throws Mage_Api_Exception
      */
-    protected function validateQuote()
+    private function validateQuote()
     {
         //XSF check
         if(Mage::getStoreConfig('payment/oxipayments/test_mode') == 0 && !$this->_validateFormKey()) {
@@ -144,7 +168,7 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
      * Get current checkout session
      * @return Mage_Core_Model_Abstract
      */
-    protected function getCheckoutSession() {
+    private function getCheckoutSession() {
         return Mage::getSingleton('checkout/session');
     }
 
@@ -153,7 +177,7 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
      * @param $checkoutUrl
      * @param $payload
      */
-    protected function postToCheckout($checkoutUrl, $payload)
+    private function postToCheckout($checkoutUrl, $payload)
     {
         echo
         "<html>
@@ -178,7 +202,7 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
      * @param $orderId
      * @return Mage_Sales_Model_Order
      */
-    protected function getOrderById($orderId)
+    private function getOrderById($orderId)
     {
         return Mage::getModel('sales/order')->loadByIncrementId($orderId);
     }
@@ -187,12 +211,13 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
      * retrieve the merchants oxipay api key
      * @return mixed
      */
-    protected function getApiKey()
+    private function getApiKey()
     {
         return Mage::getStoreConfig('payment/oxipayments/api_key');
     }
 
     /**
+     * retrieve the last order created by this session
      * @return null
      */
     private function getLastRealOrder()
@@ -205,4 +230,36 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
                 : null;
         return $order;
     }
+
+    /**
+     * @param Mage_Sales_Model_Order $order
+     * @return $this
+     * @throws Exception
+     */
+    private function cancelOrder(Mage_Sales_Model_Order $order)
+    {
+        if (!$order->isCanceled()) {
+            $order
+                ->cancel()
+                ->addStatusHistoryComment($this->__("Oxipay: $order->getId() was cancelled by the customer."));
+        }
+        return $this;
+    }
+
+    /**
+     * Loads the cart with items from the order
+     * @param Mage_Sales_Model_Order $order
+     * @return $this
+     */
+    private function restoreCart(Mage_Sales_Model_Order $order)
+    {
+        // return all products to shopping cart
+        $quote = Mage::getModel('sales/quote')->load($order->getQuoteId());
+        if ($quote->getId()) {
+            $quote->setIsActive(1)->setReservedOrderId(null)->save();
+            $this->getCheckoutSession()->replaceQuote($quote);
+        }
+        return $this;
+    }
+
 }

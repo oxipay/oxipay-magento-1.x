@@ -38,8 +38,8 @@ class Oxipay_Oxipayments_Helper_Data extends Mage_Core_Helper_Abstract
     /**
      * @return string
      */
-    public static function getCancelledUrl() {
-        return Mage::getBaseUrl() . 'oxipayments/payment/cancelled';
+    public static function getCancelledUrl(number $orderId) {
+        return Mage::getBaseUrl() . "oxipayments/payment/cancel?orderId=$orderId";
     }
 
     /**
