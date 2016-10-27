@@ -2,13 +2,14 @@
 use PHPUnit\Framework\TestCase;
 require dirname(__FILE__).'\..\app\Mage.php';
 require dirname(__FILE__).'\..\app\code\core\Mage\Core\Helper\Abstract.php';
-require dirname(__FILE__).'\..\app\code\community\Oxipay\Oxipayments\Helper\Data.php';
-class_alias('Oxipay_Oxipayments_Helper_Data', 'systemUnderTest');
+require dirname(__FILE__).'\..\app\code\community\Oxipay\Oxipayments\Helper\Crypto.php';
 
-class Oxipay_Oxipayments_Helper_DataTest extends TestCase
+class_alias('Oxipay_Oxipayments_Helper_Crypto', 'systemUnderTest');
+
+class Oxipay_Oxipayments_Helper_Crypto_Test extends TestCase
 {
-    private $apiKey = 'May the pharce be with you.';
-    private $expectedSignature = '9No9TnAif2jqR2Rz4x3AdevlTEbc07loUMhaFYg3eI=';
+    private $apiKey = 'May the phorce be with you.';
+    private $expectedSignature = 'u3CfH0b/3qybMHK9h52zUdtvhRXKCEQaribfoVPYaAA=';
 
     public function test_generateSignature_correctlyGeneratesSignature()
     {
@@ -31,11 +32,5 @@ class Oxipay_Oxipayments_Helper_DataTest extends TestCase
 
         $actual = systemUnderTest::isValidSignature($query, $this->apiKey);
         $this->assertTrue($actual);
-    }
-
-    public function test_getCheckoutUrl_returnsCorrectResult() {
-        //echo Mage::getStoreConfig('payment/oxipayments/gateway_base_url');
-        //$actual = systemUnderTest::getCheckoutUrl();
-        //$this->assertEquals("asdasd", $actual);
     }
 }

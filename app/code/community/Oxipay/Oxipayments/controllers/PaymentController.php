@@ -1,4 +1,5 @@
 <?php
+require_once dirname(__FILE__).'\..\Helper\Crypto.php';
 
 class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Action
 {
@@ -57,7 +58,7 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
      * callback - oxipay calls this once the payment process has been completed.
      */
     public function completeAction() {
-        $isValid = Oxipay_Oxipayments_Helper_Data::isValidSignature($this->getRequest()->getParams(), $this->getApiKey());
+        $isValid = Oxipay_Oxipayments_Helper_Crypto::isValidSignature($this->getRequest()->getParams(), $this->getApiKey());
         $result = $this->getRequest()->get("x_result");
         $orderId = $this->getRequest()->get("x_reference");
         if(!$isValid) {
@@ -146,7 +147,7 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
             'x_test' => Mage::getStoreConfig('payment/oxipayments/test_mode')
         );
         $apiKey = $this->getApiKey();
-        $signature = Oxipay_Oxipayments_Helper_Data::generateSignature($data, $apiKey);
+        $signature = Oxipay_Oxipayments_Helper_Crypto::generateSignature($data, $apiKey);
         $data['x_signature'] = $signature;
 
         return $data;
