@@ -1,7 +1,5 @@
 <?php
 use PHPUnit\Framework\TestCase;
-require dirname(__FILE__).'\..\app\Mage.php';
-require dirname(__FILE__).'\..\app\code\core\Mage\Core\Helper\Abstract.php';
 require dirname(__FILE__).'\..\app\code\community\Oxipay\Oxipayments\Helper\Crypto.php';
 
 class_alias('Oxipay_Oxipayments_Helper_Crypto', 'systemUnderTest');

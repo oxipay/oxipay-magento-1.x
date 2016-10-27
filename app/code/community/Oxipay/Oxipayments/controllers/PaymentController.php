@@ -4,6 +4,8 @@ require_once dirname(__FILE__).'/../Helper/Crypto.php';
 class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Action
 {
     const LOG_FILE = 'oxipay.log';
+    const OXIPAY_DEFAULT_CURRENCY_CODE = 'AUD';
+    const OXIPAY_DEFAULT_COUNTRY_CODE = 'AU';
 
     /**
      * GET: /oxipayments/payment/start
@@ -125,7 +127,7 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
 
         $orderId = $order->getRealOrderId();
         $data = array(
-            'x_currency' => 'AU',
+            'x_currency' => $order->getOrderCurrencyCode(),
             'x_url_complete' => Oxipay_Oxipayments_Helper_Data::getCompleteUrl(),
             'x_url_cancel' => Oxipay_Oxipayments_Helper_Data::getCancelledUrl($orderId),
             'x_shop_name' => Mage::app()->getStore()->getCode(),
@@ -175,12 +177,12 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
             return false;
         }
 
-        if($order->getBillingAddress()->getCountry() != "Australia") {
+        if($order->getBillingAddress()->getCountry() != self::OXIPAY_DEFAULT_COUNTRY_CODE || $order->getOrderCurrencyCode() != self::OXIPAY_DEFAULT_CURRENCY_CODE) {
             Mage::getSingleton('checkout/session')->addError("Oxipay doesn't support purchases from outside Australia.");
             return false;
         }
 
-        if($order->getShippingAddress()->getCountry() != "Australia") {
+        if($order->getShippingAddress()->getCountry() != self::OXIPAY_DEFAULT_COUNTRY_CODE) {
             Mage::getSingleton('checkout/session')->addError("Oxipay doesn't support purchases shipped outside Australia.");
             return false;
         }
