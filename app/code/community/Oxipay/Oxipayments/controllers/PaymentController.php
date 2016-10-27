@@ -1,5 +1,5 @@
 <?php
-require_once dirname(__FILE__).'\..\Helper\Crypto.php';
+require_once dirname(__FILE__).'/../Helper/Crypto.php';
 
 class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Action
 {
@@ -12,21 +12,24 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
      */
     public function startAction()
     {
-        $this->validateQuote();
+        if($this->validateQuote()) {
+            try {
+                $order = $this->getLastRealOrder();
+                $payload = $this->getPayload($order);
 
-        try {
-            $order = $this->getLastRealOrder();
-            $payload = $this->getPayload($order);
+                $order->setState(Mage_Sales_Model_Order::STATE_PENDING_PAYMENT, true, 'Oxipay authorisation underway.');
+                $order->save();
 
-            $order->setState(Mage_Sales_Model_Order::STATE_PENDING_PAYMENT, true, 'Oxipay authorisation underway.');
-            $order->save();
-
-            $this->postToCheckout(Oxipay_Oxipayments_Helper_Data::getCheckoutUrl(), $payload);
-        } catch(Exception $ex) {
-            Mage::logException($ex);
-            Mage::log('An exception was encountered in oxipayments/paymentcontroller: ' . $ex->getMessage(), Zend_Log::ERR, self::LOG_FILE);
-            Mage::log($ex->getTraceAsString(), Zend_Log::ERR, self::LOG_FILE);
-            $this->_getCheckoutSession()->addError($this->__('Unable to start Oxipay Checkout.'));
+                $this->postToCheckout(Oxipay_Oxipayments_Helper_Data::getCheckoutUrl(), $payload);
+            } catch (Exception $ex) {
+                Mage::logException($ex);
+                Mage::log('An exception was encountered in oxipayments/paymentcontroller: ' . $ex->getMessage(), Zend_Log::ERR, self::LOG_FILE);
+                Mage::log($ex->getTraceAsString(), Zend_Log::ERR, self::LOG_FILE);
+                $this->_getCheckoutSession()->addError($this->__('Unable to start Oxipay Checkout.'));
+            }
+        } else {
+            $this->restoreCart($this->getLastRealOrder());
+            $this->_redirect('checkout/cart');
         }
     }
 
@@ -162,8 +165,24 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
         //XSF check
         if(Mage::getStoreConfig('payment/oxipayments/test_mode') == 0 && !$this->_validateFormKey()) {
             Mage::log('XSFT check failed', Zend_Log::WARN, self::LOG_FILE);
-            //Mage::throwException("Cross site forgery token check failed.");
-            return;
+            Mage::throwException("Cross site forgery token check failed.");
+            return false;
+        }
+
+        $order = $this->getLastRealOrder();
+        if($order->getTotalDue() < 20) {
+            Mage::getSingleton('checkout/session')->addError("Oxipay doesn't support purchases less than $20.");
+            return false;
+        }
+
+        if($order->getBillingAddress()->getCountry() != "Australia") {
+            Mage::getSingleton('checkout/session')->addError("Oxipay doesn't support purchases from outside Australia.");
+            return false;
+        }
+
+        if($order->getShippingAddress()->getCountry() != "Australia") {
+            Mage::getSingleton('checkout/session')->addError("Oxipay doesn't support purchases shipped outside Australia.");
+            return false;
         }
     }
 
