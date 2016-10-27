@@ -66,8 +66,6 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
             return;
         }
 
-
-
         if(!$orderId) {
             Mage::log("Oxipay returned a null order id. This may indicate an issue with the Oxipay payment gateway.", Zend_Log::ERR, self::LOG_FILE);
             $this->_redirect('checkout/onepage/error', array('_secure'=> false));
@@ -95,12 +93,16 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
         else
         {
             $order
-                ->setState(Mage_Sales_Model_Order::STATE_CANCELED, true, 'Oxipay authorisation failed.')
-                ->save();
+                ->cancel()
+                ->addStatusHistoryComment($this->__("Order #: $order->getId() was rejected by oxipay."));
+
+            $this->restoreCart($order);
+            $order->save();
 
             Mage::getSingleton('checkout/session')->unsQuoteId();
-            $this->_redirect('checkout/onepage/error', array('_secure'=> false));
+            $this->_redirect('checkout/onepage/failure', array('_secure'=> false));
         }
+
     }
 
     /**
