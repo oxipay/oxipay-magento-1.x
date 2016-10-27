@@ -184,6 +184,8 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
             Mage::getSingleton('checkout/session')->addError("Oxipay doesn't support purchases shipped outside Australia.");
             return false;
         }
+
+        return true;
     }
 
     /**
