@@ -83,7 +83,7 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
             return;
         }
 
-        //magento likes to have you explicitly hydrate the object, required such that the save on line 66 doesn't fail
+        //magento likes to have you explicitly hydrate the object, required such that the save on line below doesn't fail
         $unusedPaymentObject = $order->getPayment();
 
         if ($result == "completed")
