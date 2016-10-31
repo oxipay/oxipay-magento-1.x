@@ -92,7 +92,7 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
 
         if ($result == "completed")
         {
-            $order->setState(Mage_Sales_Model_Order::STATE_PROCESSING, true, "Oxipay authorisation success. Transaction #$transactionId");
+            $order->addStatusHistoryComment($this->__("Oxipay authorisation success. Transaction #$transactionId"));
             $order->save();
 
             Mage::getSingleton('checkout/session')->unsQuoteId();
@@ -102,7 +102,7 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
         {
             $order
                 ->cancel()
-                ->addStatusHistoryComment($this->__("Order #: $order->getId() was rejected by oxipay.Transaction #$transactionId"));
+                ->addStatusHistoryComment($this->__("Order #: $order->getId() was rejected by oxipay. Transaction #$transactionId"));
 
             $this->restoreCart($order);
             $order->save();
