@@ -19,7 +19,7 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
                 $order = $this->getLastRealOrder();
                 $payload = $this->getPayload($order);
 
-                $order->setState(Mage_Sales_Model_Order::STATE_PENDING_PAYMENT, true, 'Oxipay authorisation underway.');
+                $order->setState(Mage_Sales_Model_Order::STATE_PROCESSING, true, 'Oxipay authorisation underway.');
                 $order->save();
 
                 $this->postToCheckout(Oxipay_Oxipayments_Helper_Data::getCheckoutUrl(), $payload);
@@ -66,6 +66,8 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
         $isValid = Oxipay_Oxipayments_Helper_Crypto::isValidSignature($this->getRequest()->getParams(), $this->getApiKey());
         $result = $this->getRequest()->get("x_result");
         $orderId = $this->getRequest()->get("x_reference");
+        $transactionId = $this->getRequest()->get("x_gateway_reference");
+
         if(!$isValid) {
             Mage::log('Possible site forgery detected: invalid response signature.', Zend_Log::ALERT, self::LOG_FILE);
             $this->_redirect('checkout/onepage/error', array('_secure'=> false));
@@ -90,7 +92,7 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
 
         if ($result == "completed")
         {
-            $order->setState(Mage_Sales_Model_Order::STATE_PROCESSING, true, 'Oxipay authorisation success.');
+            $order->setState(Mage_Sales_Model_Order::STATE_PROCESSING, true, "Oxipay authorisation success. Transaction #$transactionId");
             $order->save();
 
             Mage::getSingleton('checkout/session')->unsQuoteId();
@@ -100,7 +102,7 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
         {
             $order
                 ->cancel()
-                ->addStatusHistoryComment($this->__("Order #: $order->getId() was rejected by oxipay."));
+                ->addStatusHistoryComment($this->__("Order #: $order->getId() was rejected by oxipay.Transaction #$transactionId"));
 
             $this->restoreCart($order);
             $order->save();
