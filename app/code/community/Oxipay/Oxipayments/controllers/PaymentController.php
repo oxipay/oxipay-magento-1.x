@@ -117,7 +117,7 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
      * Constructs a request payload to send to oxipay
      * @return array
      */
-    private function getPayload($order) {;
+    private function getPayload($order) {
         if($order == null)
         {
             Mage::log('Unable to get order from last lodged order id. Possibly related to a failed database call.', Zend_Log::ALERT, self::LOG_FILE);
