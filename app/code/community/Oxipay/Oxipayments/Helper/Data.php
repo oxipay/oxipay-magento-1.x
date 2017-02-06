@@ -25,7 +25,7 @@ class Oxipay_Oxipayments_Helper_Data extends Mage_Core_Helper_Abstract
         $host = parse_url(self::$gatewayBaseUrl, PHP_URL_HOST);
         $port = parse_url(self::$gatewayBaseUrl, PHP_URL_PORT);
 
-        return "$scheme://$host:$port/Checkout?platform=magento";
+        return "$scheme://$host:$port/Checkout?platform=default";
     }
 
     /**
