@@ -1,4 +1,4 @@
-# oxipay-magento-1.x
+# oxipay-magento-1.x [![Build status](https://ci.appveyor.com/api/projects/status/t71e6r0lvsfriwm0/branch/master?svg=true)](https://ci.appveyor.com/project/oxipay/oxipay-magento-1-x/branch/master)
 
 ## Installation
 
