@@ -168,11 +168,11 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
     private function validateQuote()
     {
         //XSF check
-        if(Mage::getStoreConfig('payment/oxipayments/test_mode') == 0 && !$this->_validateFormKey()) {
+        /*if(Mage::getStoreConfig('payment/oxipayments/test_mode') == 0 && !$this->_validateFormKey()) {
             Mage::log('XSFT check failed', Zend_Log::WARN, self::LOG_FILE);
             Mage::throwException("Cross site forgery token check failed.");
             return false;
-        }
+        }*/
 
         $order = $this->getLastRealOrder();
         if($order->getTotalDue() < 20) {
