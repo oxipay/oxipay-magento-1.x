@@ -20,7 +20,7 @@ class Oxipay_Oxipayments_Helper_Crypto
         foreach ($query as $key => $value) {
             $clear_text .= $key . $value;
         }
-        $hash = hash_hmac( "sha256", $clear_text, $api_key, true );
+        $hash = hash_hmac( "sha256", $clear_text, $api_key);
         $hash = str_replace('-', '', $hash);
         return $hash;
     }
