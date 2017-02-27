@@ -130,6 +130,7 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
         $orderId = $order->getRealOrderId();
         $data = array(
             'x_currency' => str_replace(PHP_EOL, ' ', $order->getOrderCurrencyCode()),
+            'x_url_callback' => str_replace(PHP_EOL, ' ', Oxipay_Oxipayments_Helper_Data::getCompleteUrl()),
             'x_url_complete' => str_replace(PHP_EOL, ' ', Oxipay_Oxipayments_Helper_Data::getCompleteUrl()),
             'x_url_cancel' => str_replace(PHP_EOL, ' ', Oxipay_Oxipayments_Helper_Data::getCancelledUrl($orderId)),
             'x_shop_name' => str_replace(PHP_EOL, ' ', Mage::app()->getStore()->getCode()),
