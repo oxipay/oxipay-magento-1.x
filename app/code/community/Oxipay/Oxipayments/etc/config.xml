@@ -52,11 +52,9 @@
                 <title>Oxipay</title>
                 <allowspecific>0</allowspecific>
                 <payment_action>sale</payment_action>
-                <gateway_base_url>http://localhost:60343</gateway_base_url>
-                <gateway_checkout_url>Checkout/Process?platform=default</gateway_checkout_url>
-                <merchant_number>30166666</merchant_number>
+                <gateway_url>https://secure.oxipay.com.au/Checkout/Process?platform=default</gateway_url>
+                <merchant_number>123456</merchant_number>
                 <api_key>TEST</api_key>
-                <test_mode>1</test_mode>
             </oxipayments>
         </payment>
     </default>

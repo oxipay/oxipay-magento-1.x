@@ -152,7 +152,7 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
             'x_customer_shipping_city' => str_replace(PHP_EOL, ' ', $shippingAddress->getData('city')),
             'x_customer_shipping_state' => str_replace(PHP_EOL, ' ', $shippingAddress->getData('region')),
             'x_customer_shipping_zip' => str_replace(PHP_EOL, ' ', $shippingAddress->getData('postcode')),
-            'x_test' => str_replace(PHP_EOL, ' ', Mage::getStoreConfig('payment/oxipayments/test_mode'))
+            'x_test' => 'false'
         );
         $apiKey = $this->getApiKey();
         $signature = Oxipay_Oxipayments_Helper_Crypto::generateSignature($data, $apiKey);
