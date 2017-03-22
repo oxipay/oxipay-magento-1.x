@@ -93,6 +93,7 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
         if ($result == "completed")
         {
             $order->addStatusHistoryComment($this->__("Oxipay authorisation success. Transaction #$transactionId"));
+            $order->addStatusToHistory(Mage_Sales_Model_Order::STATE_COMPLETE);
             $order->save();
 
             Mage::getSingleton('checkout/session')->unsQuoteId();
