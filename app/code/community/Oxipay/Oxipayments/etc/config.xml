@@ -53,8 +53,8 @@
                 <allowspecific>0</allowspecific>
                 <payment_action>sale</payment_action>
                 <gateway_url>https://secure.oxipay.com.au/Checkout/Process?platform=default</gateway_url>
-                <merchant_number>123456</merchant_number>
-                <api_key>TEST</api_key>
+                <merchant_number></merchant_number>
+                <api_key></api_key>
             </oxipayments>
         </payment>
     </default>
