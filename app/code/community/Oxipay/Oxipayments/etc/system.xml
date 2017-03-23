@@ -35,31 +35,14 @@
                             <show_in_store>0</show_in_store>
                             <sort_order>2</sort_order>
                         </api_key>
-                        <test_mode translate="label">
-                            <label>Test Mode</label>
-                            <frontend_type>select</frontend_type>
-                            <source_model>adminhtml/system_config_source_yesno</source_model>
-                            <show_in_default>1</show_in_default>
-                            <show_in_website>1</show_in_website>
-                            <show_in_store>0</show_in_store>
-                            <sort_order>3</sort_order>
-                        </test_mode>
-                        <gateway_base_url translate="label">
-                            <label>Gateway Base URL (please do not change unless directed by Oxipay staff)</label>
-                            <frontend_type>text</frontend_type>
-                            <show_in_default>1</show_in_default>
-                            <show_in_website>1</show_in_website>
-                            <show_in_store>0</show_in_store>
-                            <sort_order>4</sort_order>
-                        </gateway_base_url>
-                        <gateway_checkout_url translate="label">
+                        <gateway_url translate="label">
                             <label>Gateway URL (please do not change unless directed by Oxipay staff)</label>
                             <frontend_type>text</frontend_type>
                             <show_in_default>1</show_in_default>
                             <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
-                            <sort_order>5</sort_order>
-                        </gateway_checkout_url>
+                            <sort_order>3</sort_order>
+                        </gateway_url>
                         <order_status translate="label">
                             <label>New order status</label>
                             <frontend_type>select</frontend_type>
@@ -67,7 +50,7 @@
                             <show_in_default>1</show_in_default>
                             <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
-                            <sort_order>6</sort_order>
+                            <sort_order>4</sort_order>
                         </order_status>
                     </fields>
                 </oxipayments>
