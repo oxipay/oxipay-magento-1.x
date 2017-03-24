@@ -67,6 +67,7 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
         $result = $this->getRequest()->get("x_result");
         $orderId = $this->getRequest()->get("x_reference");
         $transactionId = $this->getRequest()->get("x_gateway_reference");
+        $amount = $this->getRequest()->get("x_amount");
 
         if(!$isValid) {
             Mage::log('Possible site forgery detected: invalid response signature.', Zend_Log::ALERT, self::LOG_FILE);
@@ -92,8 +93,10 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
 
         if ($result == "completed")
         {
-            $order->addStatusHistoryComment($this->__("Oxipay authorisation success. Transaction #$transactionId"));
-            $order->addStatusToHistory(Mage_Sales_Model_Order::STATE_COMPLETE);
+            $order->setTotalPaid($amount);
+            $order->addStatusHistoryComment($this->__("Oxipay authorisation success. Transaction #$transactionId"), 
+                Mage_Sales_Model_Order::STATE_COMPLETE)->setIsCustomerNotified(true);
+            $order->sendNewOrderEmail();
             $order->save();
 
             Mage::getSingleton('checkout/session')->unsQuoteId();
