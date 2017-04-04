@@ -19,6 +19,7 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
                 $order = $this->getLastRealOrder();
                 $payload = $this->getPayload($order);
 
+                //Mage_Sales_Model_Order::setState($state, $status=false, $comment='', $isCustomerNotified=false)
                 $order->setState(Mage_Sales_Model_Order::STATE_PENDING_PAYMENT, true, 'Oxipay authorisation underway.');
                 $order->save();
 
@@ -99,7 +100,13 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
                 $orderStatus = $order->getConfig()->getStateDefaultStatus($orderState);
             }
             $order->setTotalPaid($amount);
-            $order->setState($orderState, $orderStatus ? $orderStatus : true, $this->__("Oxipay authorisation success. Transaction #$transactionId"));
+
+            $emailCustomer = Mage::getStoreConfig('payment/oxipayments/email_customer');
+            if ($emailCustomer) {
+                $order->sendNewOrderEmail();
+            }
+            $order->setState($orderState, $orderStatus ? $orderStatus : true, $this->__("Oxipay authorisation success. Transaction #$transactionId"), $emailCustomer);
+
             $order->save();
 
             $invoiceAutomatically = Mage::getStoreConfig('payment/oxipayments/automatic_invoice');

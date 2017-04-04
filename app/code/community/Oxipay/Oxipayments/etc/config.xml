@@ -57,6 +57,7 @@
                 <merchant_number></merchant_number>
                 <api_key></api_key>
                 <automatic_invoice>0</automatic_invoice> <!-- 0:No -->
+                <email_customer>1</email_customer>
             </oxipayments>
         </payment>
     </default>
