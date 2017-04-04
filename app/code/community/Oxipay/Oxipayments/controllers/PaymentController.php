@@ -101,6 +101,11 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
             $order->setTotalPaid($amount);
             $order->setState($orderState, $orderStatus ? $orderStatus : true, $this->__("Oxipay authorisation success. Transaction #$transactionId"));
             $order->save();
+
+            $invoiceAutomatically = Mage::getStoreConfig('payment/oxipayments/automatic_invoice');
+            if ($invoiceAutomatically) {
+                $this->invoiceOrder($order);
+            }
             
             Mage::getSingleton('checkout/session')->unsQuoteId();
             $this->_redirect('checkout/onepage/success', array('_secure'=> false));
@@ -118,6 +123,26 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
             $this->_redirect('checkout/onepage/failure', array('_secure'=> false));
         }
 
+    }
+
+    private function invoiceOrder($order) {
+        if(!$order->canInvoice()){
+                Mage::throwException(Mage::helper('core')->__('Cannot create an invoice.'));
+        }
+            
+        $invoice = Mage::getModel('sales/service_order', $order)->prepareInvoice();
+            
+        if (!$invoice->getTotalQty()) {
+            Mage::throwException(Mage::helper('core')->__('Cannot create an invoice without products.'));
+        }
+            
+        $invoice->setRequestedCaptureCase(Mage_Sales_Model_Order_Invoice::CAPTURE_ONLINE);
+        $invoice->register();
+        $transactionSave = Mage::getModel('core/resource_transaction')
+        ->addObject($invoice)
+        ->addObject($invoice->getOrder());
+        
+        $transactionSave->save();
     }
 
     /**

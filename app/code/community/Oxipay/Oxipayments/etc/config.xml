@@ -56,6 +56,7 @@
                 <gateway_url></gateway_url>
                 <merchant_number></merchant_number>
                 <api_key></api_key>
+                <automatic_invoice>0</automatic_invoice> <!-- 0:No -->
             </oxipayments>
         </payment>
     </default>
