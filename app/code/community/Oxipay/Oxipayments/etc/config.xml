@@ -48,7 +48,7 @@
             <oxipayments>
                 <active>1</active>
                 <model>oxipayments/paymentmethod</model>
-                <order_status>pending</order_status>
+                <order_status>processing</order_status>
                 <title>Oxipay</title>
                 <allowspecific>0</allowspecific>
                 <payment_action>sale</payment_action>

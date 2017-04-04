@@ -19,7 +19,7 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
                 $order = $this->getLastRealOrder();
                 $payload = $this->getPayload($order);
 
-                $order->setState(Mage_Sales_Model_Order::STATE_PROCESSING, true, 'Oxipay authorisation underway.');
+                $order->setState(Mage_Sales_Model_Order::STATE_PENDING_PAYMENT, true, 'Oxipay authorisation underway.');
                 $order->save();
 
                 $this->postToCheckout(Oxipay_Oxipayments_Helper_Data::getCheckoutUrl(), $payload);
@@ -67,6 +67,7 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
         $result = $this->getRequest()->get("x_result");
         $orderId = $this->getRequest()->get("x_reference");
         $transactionId = $this->getRequest()->get("x_gateway_reference");
+        $amount = $this->getRequest()->get("x_amount");
 
         if(!$isValid) {
             Mage::log('Possible site forgery detected: invalid response signature.', Zend_Log::ALERT, self::LOG_FILE);
@@ -92,10 +93,15 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
 
         if ($result == "completed")
         {
-            $order->addStatusHistoryComment($this->__("Oxipay authorisation success. Transaction #$transactionId"));
-            $order->addStatusToHistory(Mage_Sales_Model_Order::STATE_COMPLETE);
+            $orderState = Mage_Sales_Model_Order::STATE_PROCESSING;
+            $orderStatus = Mage::getStoreConfig('payment/oxipayments/order_status');
+            if (!$orderStatus) {
+                $orderStatus = $order->getConfig()->getStateDefaultStatus($orderState);
+            }
+            $order->setTotalPaid($amount);
+            $order->setState($orderState, $orderStatus ? $orderStatus : true, $this->__("Oxipay authorisation success. Transaction #$transactionId"));
             $order->save();
-
+            
             Mage::getSingleton('checkout/session')->unsQuoteId();
             $this->_redirect('checkout/onepage/success', array('_secure'=> false));
         }
