@@ -36,6 +36,7 @@
             <oxipayments_setup>
                 <setup>
                     <module>Oxipay_Oxipayments</module>
+                    <class>Mage_Sales_Model_Resource_Setup</class>
                 </setup>
             </oxipayments_setup>
         </resources>
@@ -48,7 +49,7 @@
             <oxipayments>
                 <active>1</active>
                 <model>oxipayments/paymentmethod</model>
-                <order_status>processing</order_status>
+                <order_status>oxipay_processing</order_status>
                 <title>Oxipay</title>
                 <allowspecific>0</allowspecific>
                 <payment_action>sale</payment_action>
