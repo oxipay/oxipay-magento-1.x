@@ -105,8 +105,7 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
             if (!$orderStatus) {
                 $orderStatus = $order->getConfig()->getStateDefaultStatus($orderState);
             }
-            $order->setTotalPaid($amount);
-
+            
             $emailCustomer = Mage::getStoreConfig('payment/oxipayments/email_customer');
             if ($emailCustomer) {
                 $order->sendNewOrderEmail();
