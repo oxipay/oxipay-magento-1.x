@@ -95,7 +95,7 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
         if ($result == "completed")
         {
             $orderState = Mage_Sales_Model_Order::STATE_PROCESSING;
-            $orderStatus = Mage::getStoreConfig('payment/oxipayments/order_status');
+            $orderStatus = Mage::getStoreConfig('payment/oxipayments/oxipay_approved_order_status');
             if (!$orderStatus) {
                 $orderStatus = $order->getConfig()->getStateDefaultStatus($orderState);
             }
