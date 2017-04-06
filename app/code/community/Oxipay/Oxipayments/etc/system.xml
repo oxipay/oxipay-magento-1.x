@@ -29,14 +29,14 @@
                         </merchant_number>
                         <api_key translate="label">
                             <label>API Key</label>
-                            <frontend_type>text</frontend_type>
+                            <frontend_type>obscure</frontend_type>
                             <show_in_default>1</show_in_default>
                             <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
                             <sort_order>2</sort_order>
                         </api_key>
                         <gateway_url translate="label">
-                            <label>Gateway URL (please do not change unless directed by Oxipay staff)</label>
+                            <label>Oxipay Gateway URL</label>
                             <frontend_type>text</frontend_type>
                             <show_in_default>1</show_in_default>
                             <show_in_website>1</show_in_website>
