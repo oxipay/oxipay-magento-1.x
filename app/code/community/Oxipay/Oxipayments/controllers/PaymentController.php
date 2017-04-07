@@ -19,7 +19,8 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
                 $order = $this->getLastRealOrder();
                 $payload = $this->getPayload($order);
 
-                $order->setState(Mage_Sales_Model_Order::STATE_PROCESSING, true, 'Oxipay authorisation underway.');
+                //Mage_Sales_Model_Order::setState($state, $status=false, $comment='', $isCustomerNotified=false)
+                $order->setState(Mage_Sales_Model_Order::STATE_PENDING_PAYMENT, true, 'Oxipay authorisation underway.');
                 $order->save();
 
                 $this->postToCheckout(Oxipay_Oxipayments_Helper_Data::getCheckoutUrl(), $payload);
@@ -67,6 +68,7 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
         $result = $this->getRequest()->get("x_result");
         $orderId = $this->getRequest()->get("x_reference");
         $transactionId = $this->getRequest()->get("x_gateway_reference");
+        $amount = $this->getRequest()->get("x_amount");
 
         if(!$isValid) {
             Mage::log('Possible site forgery detected: invalid response signature.', Zend_Log::ALERT, self::LOG_FILE);
@@ -87,15 +89,36 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
             return;
         }
 
+        if($order->getState() != Mage_Sales_Model_Order::STATE_PENDING_PAYMENT) {
+            Mage::log("An already approved order is attempted to be approved again: $orderId", Zend_Log::ERR, self::LOG_FILE);
+            $this->_redirect('checkout/onepage/error', array('_secure'=> false));
+            return;
+        }
+
         //magento likes to have you explicitly hydrate the object, required such that the save on line below doesn't fail
         $unusedPaymentObject = $order->getPayment();
 
         if ($result == "completed")
         {
-            $order->addStatusHistoryComment($this->__("Oxipay authorisation success. Transaction #$transactionId"));
-            $order->addStatusToHistory(Mage_Sales_Model_Order::STATE_COMPLETE);
+            $orderState = Mage_Sales_Model_Order::STATE_PROCESSING;
+            $orderStatus = Mage::getStoreConfig('payment/oxipayments/oxipay_approved_order_status');
+            if (!$orderStatus) {
+                $orderStatus = $order->getConfig()->getStateDefaultStatus($orderState);
+            }
+            
+            $emailCustomer = Mage::getStoreConfig('payment/oxipayments/email_customer');
+            if ($emailCustomer) {
+                $order->sendNewOrderEmail();
+            }
+            $order->setState($orderState, $orderStatus ? $orderStatus : true, $this->__("Oxipay authorisation success. Transaction #$transactionId"), $emailCustomer);
+
             $order->save();
 
+            $invoiceAutomatically = Mage::getStoreConfig('payment/oxipayments/automatic_invoice');
+            if ($invoiceAutomatically) {
+                $this->invoiceOrder($order);
+            }
+            
             Mage::getSingleton('checkout/session')->unsQuoteId();
             $this->_redirect('checkout/onepage/success', array('_secure'=> false));
         }
@@ -112,6 +135,26 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
             $this->_redirect('checkout/onepage/failure', array('_secure'=> false));
         }
 
+    }
+
+    private function invoiceOrder($order) {
+        if(!$order->canInvoice()){
+                Mage::throwException(Mage::helper('core')->__('Cannot create an invoice.'));
+        }
+            
+        $invoice = Mage::getModel('sales/service_order', $order)->prepareInvoice();
+            
+        if (!$invoice->getTotalQty()) {
+            Mage::throwException(Mage::helper('core')->__('Cannot create an invoice without products.'));
+        }
+            
+        $invoice->setRequestedCaptureCase(Mage_Sales_Model_Order_Invoice::CAPTURE_ONLINE);
+        $invoice->register();
+        $transactionSave = Mage::getModel('core/resource_transaction')
+        ->addObject($invoice)
+        ->addObject($invoice->getOrder());
+        
+        $transactionSave->save();
     }
 
     /**
