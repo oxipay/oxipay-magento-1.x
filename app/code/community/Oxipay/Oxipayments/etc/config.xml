@@ -47,7 +47,7 @@
     <default>
         <payment>
             <oxipayments>
-                <active>1</active>
+                <active>0</active>
                 <model>oxipayments/paymentmethod</model>
                 <oxipay_approved_order_status>oxipay_processed</oxipay_approved_order_status>
                 <title>Oxipay</title>

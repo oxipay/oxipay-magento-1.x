@@ -30,7 +30,7 @@
                         </merchant_number>
                         <api_key translate="label">
                             <label>API Key</label>
-                            <frontend_type>obscure</frontend_type>
+                            <frontend_type>password</frontend_type>
                             <validate>required-entry</validate>
                             <show_in_default>1</show_in_default>
                             <show_in_website>1</show_in_website>
