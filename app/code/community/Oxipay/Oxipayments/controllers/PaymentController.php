@@ -249,7 +249,7 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
             <body>
             <form id='form' action='$checkoutUrl' method='post'>";
         foreach ($payload as $key => $value) {
-            echo "<input type='hidden' id='$key' name='$key' value='$value'/>";
+            echo "<input type='hidden' id='$key' name='$key' value='".htmlspecialchars($value, ENT_QUOTES)."'/>";
         }
         echo
         '</form>
