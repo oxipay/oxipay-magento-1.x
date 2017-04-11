@@ -89,9 +89,8 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
             return;
         }
 
-        if($order->getState() != Mage_Sales_Model_Order::STATE_PENDING_PAYMENT) {
-            Mage::log("An already approved order is attempted to be approved again: $orderId", Zend_Log::ERR, self::LOG_FILE);
-            $this->_redirect('checkout/onepage/error', array('_secure'=> false));
+        if($order->getState() === Mage_Sales_Model_Order::STATE_PROCESSING) {
+            $this->_redirect('checkout/onepage/success', array('_secure'=> false));
             return;
         }
 
