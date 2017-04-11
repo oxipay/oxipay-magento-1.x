@@ -101,7 +101,7 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
         {
             $orderState = Mage_Sales_Model_Order::STATE_PROCESSING;
             $orderStatus = Mage::getStoreConfig('payment/oxipayments/oxipay_approved_order_status');
-            if (!$orderStatus) {
+            if (!$this->statusExists($orderStatus)) {
                 $orderStatus = $order->getConfig()->getStateDefaultStatus($orderState);
             }
             
@@ -134,6 +134,14 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
             $this->_redirect('checkout/onepage/failure', array('_secure'=> false));
         }
 
+    }
+
+    private function statusExists($orderStatus) {
+        $statuses = Mage::getModel('sales/order_status')->getResourceCollection()->getData();
+        foreach ($statuses as $status) {
+            if ($orderStatus === $status["status"]) return true;
+        }
+        return false;
     }
 
     private function invoiceOrder($order) {
