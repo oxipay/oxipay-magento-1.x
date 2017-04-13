@@ -4,7 +4,7 @@
     <!-- Module Metadata -->
     <modules>
         <Oxipay_Oxipayments>
-            <version>0.3.1</version>
+            <version>0.4.0</version>
         </Oxipay_Oxipayments>
     </modules>
     <!-- End Module Metadata -->
@@ -36,6 +36,7 @@
             <oxipayments_setup>
                 <setup>
                     <module>Oxipay_Oxipayments</module>
+                    <class>Mage_Core_Model_Resource_Setup</class>
                 </setup>
             </oxipayments_setup>
         </resources>
@@ -46,15 +47,17 @@
     <default>
         <payment>
             <oxipayments>
-                <active>1</active>
+                <active>0</active>
                 <model>oxipayments/paymentmethod</model>
-                <order_status>pending</order_status>
+                <oxipay_approved_order_status>oxipay_processed</oxipay_approved_order_status>
                 <title>Oxipay</title>
                 <allowspecific>0</allowspecific>
                 <payment_action>sale</payment_action>
                 <gateway_url></gateway_url>
                 <merchant_number></merchant_number>
                 <api_key></api_key>
+                <automatic_invoice>0</automatic_invoice> <!-- 0:No -->
+                <email_customer>1</email_customer>
             </oxipayments>
         </payment>
     </default>
