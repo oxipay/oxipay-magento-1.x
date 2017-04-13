@@ -137,9 +137,19 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
     }
 
     private function statusExists($orderStatus) {
-        $statuses = Mage::getModel('sales/order_status')->getResourceCollection()->getData();
-        foreach ($statuses as $status) {
-            if ($orderStatus === $status["status"]) return true;
+        try {
+            $orderStatusModel = Mage::getModel('sales/order_status');
+            if ($orderStatusModel) {
+                $statusesResCol = $orderStatusModel->getResourceCollection();
+                if ($statusesResCol) {
+                    $statuses = $statusesResCol->getData();
+                    foreach ($statuses as $status) {
+                        if ($orderStatus === $status["status"]) return true;
+                    }
+                }
+            }
+        } catch(Exception $e) {
+            Mage::log("Exception searching statuses: ".($e->getMessage()), Zend_Log::ERR, self::LOG_FILE);
         }
         return false;
     }
@@ -178,6 +188,9 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
         $shippingAddress = $order->getShippingAddress();
         $billingAddress = $order->getBillingAddress();
 
+        $billingAddressParts = explode(PHP_EOL, $billingAddress->getData('street'));
+        $shippingAddressParts = explode(PHP_EOL, $shippingAddress->getData('street')); 
+
         $orderId = $order->getRealOrderId();
         $data = array(
             'x_currency' => str_replace(PHP_EOL, ' ', $order->getOrderCurrencyCode()),
@@ -193,13 +206,13 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
             'x_customer_last_name' => str_replace(PHP_EOL, ' ', $order->getCustomerLastname()),
             'x_customer_email' => str_replace(PHP_EOL, ' ', $order->getData('customer_email')),
             'x_customer_phone' => str_replace(PHP_EOL, ' ', $billingAddress->getData('telephone')),
-            'x_customer_billing_address1' => explode(PHP_EOL, $billingAddress->getData('street'))[0],
-            'x_customer_billing_address2' => explode(PHP_EOL, $billingAddress->getData('street'))[1],
+            'x_customer_billing_address1' => $billingAddressParts[0],
+            'x_customer_billing_address2' => $billingAddressParts[1],
             'x_customer_billing_city' => str_replace(PHP_EOL, ' ', $billingAddress->getData('city')),
             'x_customer_billing_state' => str_replace(PHP_EOL, ' ', $billingAddress->getData('region')),
             'x_customer_billing_zip' => str_replace(PHP_EOL, ' ', $billingAddress->getData('postcode')),
-            'x_customer_shipping_address1' => explode(PHP_EOL, $shippingAddress->getData('street'))[0],
-            'x_customer_shipping_address2' => explode(PHP_EOL, $shippingAddress->getData('street'))[1],
+            'x_customer_shipping_address1' => $shippingAddressParts[0],
+            'x_customer_shipping_address2' => $shippingAddressParts[1],
             'x_customer_shipping_city' => str_replace(PHP_EOL, ' ', $shippingAddress->getData('city')),
             'x_customer_shipping_state' => str_replace(PHP_EOL, ' ', $shippingAddress->getData('region')),
             'x_customer_shipping_zip' => str_replace(PHP_EOL, ' ', $shippingAddress->getData('postcode')),
