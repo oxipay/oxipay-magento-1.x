@@ -89,8 +89,13 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
             return;
         }
 
-        if($order->getState() === Mage_Sales_Model_Order::STATE_PROCESSING) {
+        if($result == "completed" && $order->getState() === Mage_Sales_Model_Order::STATE_PROCESSING) {
             $this->_redirect('checkout/onepage/success', array('_secure'=> false));
+            return;
+        }
+
+        if($result == "failed" && $order->getState() === Mage_Sales_Model_Order::STATE_CANCELED) {
+            $this->_redirect('checkout/onepage/failure', array('_secure'=> false));
             return;
         }
 
@@ -125,7 +130,7 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
         {
             $order
                 ->cancel()
-                ->addStatusHistoryComment($this->__("Order #: $order->getId() was rejected by oxipay. Transaction #$transactionId"));
+                ->addStatusHistoryComment($this->__("Order #".($order->getId())." was rejected by oxipay. Transaction #$transactionId."));
 
             $this->restoreCart($order);
             $order->save();
