@@ -323,6 +323,9 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
     }
 
     /**
+     * Method is called when an order is cancelled by a customer. As an Oxipay reference is only passed back to
+     * Magento upon a success or decline outcome, the method will return a message with a Magento reference only.
+     * 
      * @param Mage_Sales_Model_Order $order
      * @return $this
      * @throws Exception
@@ -332,7 +335,7 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
         if (!$order->isCanceled()) {
             $order
                 ->cancel()
-                ->addStatusHistoryComment($this->__("Oxipay: $order->getId() was cancelled by the customer."));
+                ->addStatusHistoryComment($this->__("Order #".($order->getId())." was canceled by customer."));
         }
         return $this;
     }
