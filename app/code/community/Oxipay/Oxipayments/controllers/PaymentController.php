@@ -4,9 +4,7 @@ require_once dirname(__FILE__).'/../Helper/Crypto.php';
 class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Action
 {
     const LOG_FILE = 'oxipay.log';
-    const OXIPAY_DEFAULT_CURRENCY_CODE = 'AUD';
-    const OXIPAY_DEFAULT_COUNTRY_CODE = 'AU';
-
+    
     /**
      * GET: /oxipayments/payment/start
      *
@@ -14,9 +12,9 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
      */
     public function startAction()
     {
-        if($this->validateQuote()) {
-            try {
-                $order = $this->getLastRealOrder();
+        $order = $this->getLastRealOrder();
+        try {
+            if($this->validateQuote()) {
                 $payload = $this->getPayload($order);
 
                 //Mage_Sales_Model_Order::setState($state, $status=false, $comment='', $isCustomerNotified=false)
@@ -24,16 +22,20 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
                 $order->save();
 
                 $this->postToCheckout(Oxipay_Oxipayments_Helper_Data::getCheckoutUrl(), $payload);
-            } catch (Exception $ex) {
-                Mage::logException($ex);
-                Mage::log('An exception was encountered in oxipayments/paymentcontroller: ' . $ex->getMessage(), Zend_Log::ERR, self::LOG_FILE);
-                Mage::log($ex->getTraceAsString(), Zend_Log::ERR, self::LOG_FILE);
-                $this->_getCheckoutSession()->addError($this->__('Unable to start Oxipay Checkout.'));
+            } else {
+                $this->restoreCart($this->getLastRealOrder());
+                $this->_redirect('checkout/cart');
             }
-        } else {
+        } catch(Exception $ex) {
+            Mage::logException($ex);
+            Mage::log('An exception was encountered in oxipayments/paymentcontroller: ' . $ex->getMessage(), Zend_Log::ERR, self::LOG_FILE);
+            Mage::log($ex->getTraceAsString(), Zend_Log::ERR, self::LOG_FILE);
+            Mage::getSingleton('checkout/session')->addError($this->__('Unable to start Oxipay Checkout.'));
+            $this->cancelOrder($order, "Order #".($order->getRealOrderId())." was canceled. Unable to start Oxipay Checkout: ".($ex->getMessage()));
+            $order->save();
             $this->restoreCart($this->getLastRealOrder());
             $this->_redirect('checkout/cart');
-        }
+        } 
     }
 
     /**
@@ -51,7 +53,7 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
                 Zend_Log::DEBUG,
                 self::LOG_FILE
             );
-            $this->cancelOrder($order);
+            $this->cancelOrder($order, "Order #".($orderId)." was canceled by customer.");
             $this->restoreCart($order);
             $order->save();
         }
@@ -242,13 +244,15 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
             return false;
         }
 
-        if($order->getBillingAddress()->getCountry() != self::OXIPAY_DEFAULT_COUNTRY_CODE || $order->getOrderCurrencyCode() != self::OXIPAY_DEFAULT_CURRENCY_CODE) {
-            Mage::getSingleton('checkout/session')->addError("Oxipay doesn't support purchases from outside Australia.");
+        $countryInfo = $this->getCountryInfoFromGatewayUrl();
+
+        if($order->getBillingAddress()->getCountry() != $countryInfo['countryCode'] || $order->getOrderCurrencyCode() != $countryInfo['currencyCode']) {
+            Mage::getSingleton('checkout/session')->addError("Oxipay doesn't support purchases from outside ".($countryInfo['countryName']).".");
             return false;
         }
 
-        if($order->getShippingAddress()->getCountry() != self::OXIPAY_DEFAULT_COUNTRY_CODE) {
-            Mage::getSingleton('checkout/session')->addError("Oxipay doesn't support purchases shipped outside Australia.");
+        if($order->getShippingAddress()->getCountry() != $countryInfo['countryCode']) {
+            Mage::getSingleton('checkout/session')->addError("Oxipay doesn't support purchases shipped outside ".($countryInfo['countryName']).".");
             return false;
         }
 
@@ -330,12 +334,12 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
      * @return $this
      * @throws Exception
      */
-    private function cancelOrder(Mage_Sales_Model_Order $order)
+    private function cancelOrder(Mage_Sales_Model_Order $order, $message)
     {
         if (!$order->isCanceled()) {
             $order
                 ->cancel()
-                ->addStatusHistoryComment($this->__("Order #".($order->getId())." was canceled by customer."));
+                ->addStatusHistoryComment($message);
         }
         return $this;
     }
@@ -354,6 +358,21 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
             $this->getCheckoutSession()->replaceQuote($quote);
         }
         return $this;
+    }
+
+    private function getCountryInfoFromGatewayUrl() {
+        $gatewayUrl = Oxipay_Oxipayments_Helper_Data::getCheckoutUrl();
+        $gatewayUrlData = parse_url($gatewayUrl);
+        $host = $gatewayUrlData['host'];
+
+        if (strpos($host, '.com.au') !== false) {
+            return array('countryCode' => 'AU', 'currencyCode' => 'AUD', 'countryName' => 'Australia');
+        } else if (strpos($host, '.co.nz') !== false) {
+            return array('countryCode' => 'NZ', 'currencyCode' => 'NZD', 'countryName' => 'New Zealand');
+        } else {
+            Mage::log("Couldn't determine country from gateway URL: $gatewayUrl", Zend_Log::ERR, self::LOG_FILE);
+            throw new Exception("Couldn't determine country from gateway URL: $gatewayUrl"); 
+        }
     }
 
 }
