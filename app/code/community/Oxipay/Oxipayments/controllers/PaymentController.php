@@ -236,7 +236,7 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
      */
     private function validateQuote()
     {
-        $allowedCountriesArray = explode(',', $this->_gatewayConfig->getSpecificCountry());
+        $allowedCountriesArray = explode(',', $this->getSpecificCountry());
 
         $order = $this->getLastRealOrder();
         if($order->getTotalDue() < 20) {
@@ -249,7 +249,7 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
             return false;
         }
 
-        if($order->getShippingAddress()->getCountry() != self::OXIPAY_DEFAULT_COUNTRY_CODE) {
+        if($order->getShippingAddress()->getCountry() != $allowedCountriesArray) {
             Mage::getSingleton('checkout/session')->addError("Orders shipped to this country are not supported by Oxipay. Please select a different payment option.");
             return false;
         }
