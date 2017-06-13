@@ -91,6 +91,15 @@
                             <show_in_store>0</show_in_store>
                             <sort_order>8</sort_order>
                         </max_order_total>
+                        <specificcountry>
+                          <label>Payment from Specific Countries</label>
+                          <frontend_type>multiselect</frontend_type>
+                          <source_model>adminhtml/system_config_source_specific_country</source_model>
+                          <show_in_default>1</show_in_default>
+                          <show_in_website>1</show_in_website>
+                          <show_in_store>0</show_in_store>
+                          <sort_order>9</sort_order>
+                        </specificcountry>
                     </fields>
                 </oxipayments>
             </groups>

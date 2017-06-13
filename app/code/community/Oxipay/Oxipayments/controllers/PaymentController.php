@@ -109,7 +109,7 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
             if (!$this->statusExists($orderStatus)) {
                 $orderStatus = $order->getConfig()->getStateDefaultStatus($orderState);
             }
-            
+
             $emailCustomer = Mage::getStoreConfig('payment/oxipayments/email_customer');
             if ($emailCustomer) {
                 $order->sendNewOrderEmail();
@@ -122,7 +122,7 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
             if ($invoiceAutomatically) {
                 $this->invoiceOrder($order);
             }
-            
+
             Mage::getSingleton('checkout/session')->unsQuoteId();
             $this->_redirect('checkout/onepage/success', array('_secure'=> false));
         }
@@ -163,19 +163,19 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
         if(!$order->canInvoice()){
                 Mage::throwException(Mage::helper('core')->__('Cannot create an invoice.'));
         }
-            
+
         $invoice = Mage::getModel('sales/service_order', $order)->prepareInvoice();
-            
+
         if (!$invoice->getTotalQty()) {
             Mage::throwException(Mage::helper('core')->__('Cannot create an invoice without products.'));
         }
-            
+
         $invoice->setRequestedCaptureCase(Mage_Sales_Model_Order_Invoice::CAPTURE_ONLINE);
         $invoice->register();
         $transactionSave = Mage::getModel('core/resource_transaction')
         ->addObject($invoice)
         ->addObject($invoice->getOrder());
-        
+
         $transactionSave->save();
     }
 
@@ -194,7 +194,7 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
         $billingAddress = $order->getBillingAddress();
 
         $billingAddressParts = explode(PHP_EOL, $billingAddress->getData('street'));
-        $shippingAddressParts = explode(PHP_EOL, $shippingAddress->getData('street')); 
+        $shippingAddressParts = explode(PHP_EOL, $shippingAddress->getData('street'));
 
         $orderId = $order->getRealOrderId();
         $data = array(
@@ -236,19 +236,21 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
      */
     private function validateQuote()
     {
+        $allowedCountriesArray = explode(',', $this->_gatewayConfig->getSpecificCountry());
+
         $order = $this->getLastRealOrder();
         if($order->getTotalDue() < 20) {
             Mage::getSingleton('checkout/session')->addError("Oxipay doesn't support purchases less than $20.");
             return false;
         }
 
-        if($order->getBillingAddress()->getCountry() != self::OXIPAY_DEFAULT_COUNTRY_CODE || $order->getOrderCurrencyCode() != self::OXIPAY_DEFAULT_CURRENCY_CODE) {
-            Mage::getSingleton('checkout/session')->addError("Oxipay doesn't support purchases from outside Australia.");
+        if($order->getBillingAddress()->getCountry() != $allowedCountriesArray || $order->getOrderCurrencyCode() != $allowedCountriesArray) {
+            Mage::getSingleton('checkout/session')->addError("Orders from this country are not supported by Oxipay. Please select a different payment option.");
             return false;
         }
 
         if($order->getShippingAddress()->getCountry() != self::OXIPAY_DEFAULT_COUNTRY_CODE) {
-            Mage::getSingleton('checkout/session')->addError("Oxipay doesn't support purchases shipped outside Australia.");
+            Mage::getSingleton('checkout/session')->addError("Orders shipped to this country are not supported by Oxipay. Please select a different payment option.");
             return false;
         }
 
@@ -308,6 +310,16 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
     }
 
     /**
+    * Get specific country
+    *
+    * @return string
+    */
+    public function getSpecificCountry()
+    {
+      return Mage::getStoreConfig('payment/oxipayments/specificcountry');
+    }
+
+    /**
      * retrieve the last order created by this session
      * @return null
      */
@@ -325,7 +337,7 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
     /**
      * Method is called when an order is cancelled by a customer. As an Oxipay reference is only passed back to
      * Magento upon a success or decline outcome, the method will return a message with a Magento reference only.
-     * 
+     *
      * @param Mage_Sales_Model_Order $order
      * @return $this
      * @throws Exception
