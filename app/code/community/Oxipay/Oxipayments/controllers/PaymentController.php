@@ -163,7 +163,7 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
         if(!$order->canInvoice()){
                 Mage::throwException(Mage::helper('core')->__('Cannot create an invoice.'));
         }
-            
+
         $invoice = Mage::getModel('sales/service_order', $order)->prepareInvoice();
             
         if (!$invoice->getTotalQty()) {
@@ -194,7 +194,12 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
         $billingAddress = $order->getBillingAddress();
 
         $billingAddressParts = explode(PHP_EOL, $billingAddress->getData('street'));
-        $shippingAddressParts = explode(PHP_EOL, $shippingAddress->getData('street')); 
+        $billingAddress0 = $billingAddressParts[0];
+        $billingAddress1 = (count($billingAddressParts)>1)? $billingAddressParts[1]:'';
+
+        $shippingAddressParts = explode(PHP_EOL, $shippingAddress->getData('street'));
+        $shippingAddress0 = $shippingAddressParts[0];
+        $shippingAddress1 = (count($shippingAddressParts)>1)? $shippingAddressParts[1]:'';
 
         $orderId = $order->getRealOrderId();
         $data = array(
@@ -211,13 +216,13 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
             'x_customer_last_name' => str_replace(PHP_EOL, ' ', $order->getCustomerLastname()),
             'x_customer_email' => str_replace(PHP_EOL, ' ', $order->getData('customer_email')),
             'x_customer_phone' => str_replace(PHP_EOL, ' ', $billingAddress->getData('telephone')),
-            'x_customer_billing_address1' => $billingAddressParts[0],
-            'x_customer_billing_address2' => $billingAddressParts[1],
+            'x_customer_billing_address1' => $billingAddress0,
+            'x_customer_billing_address2' => $billingAddress1,
             'x_customer_billing_city' => str_replace(PHP_EOL, ' ', $billingAddress->getData('city')),
             'x_customer_billing_state' => str_replace(PHP_EOL, ' ', $billingAddress->getData('region')),
             'x_customer_billing_zip' => str_replace(PHP_EOL, ' ', $billingAddress->getData('postcode')),
-            'x_customer_shipping_address1' => $shippingAddressParts[0],
-            'x_customer_shipping_address2' => $shippingAddressParts[1],
+            'x_customer_shipping_address1' => $shippingAddress0,
+            'x_customer_shipping_address2' => $shippingAddress1,
             'x_customer_shipping_city' => str_replace(PHP_EOL, ' ', $shippingAddress->getData('city')),
             'x_customer_shipping_state' => str_replace(PHP_EOL, ' ', $shippingAddress->getData('region')),
             'x_customer_shipping_zip' => str_replace(PHP_EOL, ' ', $shippingAddress->getData('postcode')),
