@@ -25,12 +25,4 @@ class Oxipay_Oxipayments_Model_Paymentmethod extends Mage_Payment_Model_Method_A
     }
 }
 
-class SpecificCountry extends Mage_Payment_Model_Method_Abstract {
-
-    public function __construct(\Magento\Directory\Model\ResourceModel\Country\Collection $countryCollection)
-    {
-        $countryCollection->addCountryIdFilter(array('AU', 'NZ'));
-
-        parent::__construct($countryCollection);
-    }
-}
+?>
