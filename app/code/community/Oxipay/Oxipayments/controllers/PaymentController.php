@@ -4,8 +4,10 @@ require_once dirname(__FILE__).'/../Helper/Crypto.php';
 class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Action
 {
     const LOG_FILE = 'oxipay.log';
-    const OXIPAY_DEFAULT_CURRENCY_CODE = 'AUD';
-    const OXIPAY_DEFAULT_COUNTRY_CODE = 'AU';
+    const OXIPAY_AU_CURRENCY_CODE = 'AUD';
+    const OXIPAY_AU_COUNTRY_CODE = 'AU';
+    const OXIPAY_NZ_CURRENCY_CODE = 'NZD';
+    const OXIPAY_NZ_COUNTRY_CODE = 'AU';
 
     /**
      * GET: /oxipayments/payment/start
@@ -236,20 +238,28 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
      */
     private function validateQuote()
     {
-        $allowedCountriesArray = explode(',', $this->getSpecificCountry());
+        $specificCurrency = null;
+
+        if ($this->getSpecificCountry() == self::OXIPAY_AU_COUNTRY_CODE) {
+            $specificCurrency = self::OXIPAY_AU_CURRENCY_CODE;
+        }
+        else if ($this->getSpecificCountry() == self::OXIPAY_NZ_COUNTRY_CODE) {
+            $specificCurrency = self::OXIPAY_NZ_CURRENCY_CODE;
+        }
 
         $order = $this->getLastRealOrder();
+
         if($order->getTotalDue() < 20) {
             Mage::getSingleton('checkout/session')->addError("Oxipay doesn't support purchases less than $20.");
             return false;
         }
 
-        if($order->getBillingAddress()->getCountry() != $allowedCountriesArray || $order->getOrderCurrencyCode() != $allowedCountriesArray) {
+        if($order->getBillingAddress()->getCountry() != $this->getSpecificCountry() || $order->getOrderCurrencyCode() != $specificCurrency ) {
             Mage::getSingleton('checkout/session')->addError("Orders from this country are not supported by Oxipay. Please select a different payment option.");
             return false;
         }
 
-        if($order->getShippingAddress()->getCountry() != $allowedCountriesArray) {
+        if($order->getShippingAddress()->getCountry() != $this->getSpecificCountry()) {
             Mage::getSingleton('checkout/session')->addError("Orders shipped to this country are not supported by Oxipay. Please select a different payment option.");
             return false;
         }
