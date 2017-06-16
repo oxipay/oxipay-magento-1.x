@@ -7,7 +7,7 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
     const OXIPAY_AU_CURRENCY_CODE = 'AUD';
     const OXIPAY_AU_COUNTRY_CODE = 'AU';
     const OXIPAY_NZ_CURRENCY_CODE = 'NZD';
-    const OXIPAY_NZ_COUNTRY_CODE = 'AU';
+    const OXIPAY_NZ_COUNTRY_CODE = 'NZ';
 
     /**
      * GET: /oxipayments/payment/start
