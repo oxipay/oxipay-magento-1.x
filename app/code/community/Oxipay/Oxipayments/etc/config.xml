@@ -54,6 +54,7 @@
                 <allowspecific>0</allowspecific>
                 <payment_action>sale</payment_action>
                 <gateway_url></gateway_url>
+                <specificcountry>AU,NZ</specificcountry>
                 <merchant_number></merchant_number>
                 <api_key></api_key>
                 <automatic_invoice>0</automatic_invoice> <!-- 0:No -->
