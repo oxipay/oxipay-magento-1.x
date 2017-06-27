@@ -30,7 +30,7 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
                 Mage::logException($ex);
                 Mage::log('An exception was encountered in oxipayments/paymentcontroller: ' . $ex->getMessage(), Zend_Log::ERR, self::LOG_FILE);
                 Mage::log($ex->getTraceAsString(), Zend_Log::ERR, self::LOG_FILE);
-                $this->_getCheckoutSession()->addError($this->__('Unable to start Oxipay Checkout.'));
+                $this->getCheckoutSession()->addError($this->__('Unable to start Oxipay Checkout.'));
             }
         } else {
             $this->restoreCart($this->getLastRealOrder());
@@ -87,6 +87,13 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
         $order = $this->getOrderById($orderId);
         if(!$order) {
             Mage::log("Oxipay returned an id for an order that could not be retrieved: $orderId", Zend_Log::ERR, self::LOG_FILE);
+            $this->_redirect('checkout/onepage/error', array('_secure'=> false));
+            return;
+        }
+
+        // ensure that we have a Mage_Sales_Model_Order
+        if (get_class($order) !== 'Mage_Sales_Model_Order') {
+            Mage::log("The instance of order returned is an unexpected type.", Zend_Log::ERR, self::LOG_FILE);
             $this->_redirect('checkout/onepage/error', array('_secure'=> false));
             return;
         }
@@ -161,9 +168,10 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
         return false;
     }
 
-    private function invoiceOrder($order) {
+    private function invoiceOrder(Mage_Sales_Model_Order $order) {
+
         if(!$order->canInvoice()){
-                Mage::throwException(Mage::helper('core')->__('Cannot create an invoice.'));
+            Mage::throwException(Mage::helper('core')->__('Cannot create an invoice.'));
         }
 
         $invoice = Mage::getModel('sales/service_order', $order)->prepareInvoice();
@@ -203,34 +211,35 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
         $shippingAddress0 = $shippingAddressParts[0];
         $shippingAddress1 = (count($shippingAddressParts)>1)? $shippingAddressParts[1]:'';
 
-        $orderId = $order->getRealOrderId();
+        $orderId = (int)$order->getRealOrderId();
+        $canceledURL  = Oxipay_Oxipayments_Helper_Data::getCancelledUrl($orderId);
         $data = array(
-            'x_currency' => str_replace(PHP_EOL, ' ', $order->getOrderCurrencyCode()),
-            'x_url_callback' => str_replace(PHP_EOL, ' ', Oxipay_Oxipayments_Helper_Data::getCompleteUrl()),
-            'x_url_complete' => str_replace(PHP_EOL, ' ', Oxipay_Oxipayments_Helper_Data::getCompleteUrl()),
-            'x_url_cancel' => str_replace(PHP_EOL, ' ', Oxipay_Oxipayments_Helper_Data::getCancelledUrl($orderId)),
-            'x_shop_name' => str_replace(PHP_EOL, ' ', Mage::app()->getStore()->getCode()),
-            'x_account_id' => str_replace(PHP_EOL, ' ', Mage::getStoreConfig('payment/oxipayments/merchant_number')),
-            'x_reference' => str_replace(PHP_EOL, ' ', $orderId),
-            'x_invoice' => str_replace(PHP_EOL, ' ', $orderId),
-            'x_amount' => str_replace(PHP_EOL, ' ', $order->getTotalDue()),
+            'x_currency'            => str_replace(PHP_EOL, ' ', $order->getOrderCurrencyCode()),
+            'x_url_callback'        => str_replace(PHP_EOL, ' ', Oxipay_Oxipayments_Helper_Data::getCompleteUrl()),
+            'x_url_complete'        => str_replace(PHP_EOL, ' ', Oxipay_Oxipayments_Helper_Data::getCompleteUrl()),
+            'x_url_cancel'          => str_replace(PHP_EOL, ' ', Oxipay_Oxipayments_Helper_Data::getCancelledUrl($orderId)),
+            'x_shop_name'           => str_replace(PHP_EOL, ' ', Mage::app()->getStore()->getCode()),
+            'x_account_id'          => str_replace(PHP_EOL, ' ', Mage::getStoreConfig('payment/oxipayments/merchant_number')),
+            'x_reference'           => str_replace(PHP_EOL, ' ', $orderId),
+            'x_invoice'             => str_replace(PHP_EOL, ' ', $orderId),
+            'x_amount'              => str_replace(PHP_EOL, ' ', $order->getTotalDue()),
             'x_customer_first_name' => str_replace(PHP_EOL, ' ', $order->getCustomerFirstname()),
-            'x_customer_last_name' => str_replace(PHP_EOL, ' ', $order->getCustomerLastname()),
-            'x_customer_email' => str_replace(PHP_EOL, ' ', $order->getData('customer_email')),
-            'x_customer_phone' => str_replace(PHP_EOL, ' ', $billingAddress->getData('telephone')),
-            'x_customer_billing_address1' => $billingAddress0,
-            'x_customer_billing_address2' => $billingAddress1,
-            'x_customer_billing_city' => str_replace(PHP_EOL, ' ', $billingAddress->getData('city')),
-            'x_customer_billing_state' => str_replace(PHP_EOL, ' ', $billingAddress->getData('region')),
-            'x_customer_billing_zip' => str_replace(PHP_EOL, ' ', $billingAddress->getData('postcode')),
+            'x_customer_last_name'  => str_replace(PHP_EOL, ' ', $order->getCustomerLastname()),
+            'x_customer_email'      => str_replace(PHP_EOL, ' ', $order->getData('customer_email')),
+            'x_customer_phone'      => str_replace(PHP_EOL, ' ', $billingAddress->getData('telephone')),
+            'x_customer_billing_address1'  => $billingAddress0,
+            'x_customer_billing_address2'  => $billingAddress1,
+            'x_customer_billing_city'      => str_replace(PHP_EOL, ' ', $billingAddress->getData('city')),
+            'x_customer_billing_state'     => str_replace(PHP_EOL, ' ', $billingAddress->getData('region')),
+            'x_customer_billing_zip'       => str_replace(PHP_EOL, ' ', $billingAddress->getData('postcode')),
             'x_customer_shipping_address1' => $shippingAddress0,
             'x_customer_shipping_address2' => $shippingAddress1,
-            'x_customer_shipping_city' => str_replace(PHP_EOL, ' ', $shippingAddress->getData('city')),
-            'x_customer_shipping_state' => str_replace(PHP_EOL, ' ', $shippingAddress->getData('region')),
-            'x_customer_shipping_zip' => str_replace(PHP_EOL, ' ', $shippingAddress->getData('postcode')),
-            'x_test' => 'false'
+            'x_customer_shipping_city'     => str_replace(PHP_EOL, ' ', $shippingAddress->getData('city')),
+            'x_customer_shipping_state'    => str_replace(PHP_EOL, ' ', $shippingAddress->getData('region')),
+            'x_customer_shipping_zip'      => str_replace(PHP_EOL, ' ', $shippingAddress->getData('postcode')),
+            'x_test'                       => 'false'
         );
-        $apiKey = $this->getApiKey();
+        $apiKey    = $this->getApiKey();
         $signature = Oxipay_Oxipayments_Helper_Crypto::generateSignature($data, $apiKey);
         $data['x_signature'] = $signature;
 
