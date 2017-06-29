@@ -4,8 +4,10 @@ require_once dirname(__FILE__).'/../Helper/Crypto.php';
 class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Action
 {
     const LOG_FILE = 'oxipay.log';
-    const OXIPAY_DEFAULT_CURRENCY_CODE = 'AUD';
-    const OXIPAY_DEFAULT_COUNTRY_CODE = 'AU';
+    const OXIPAY_AU_CURRENCY_CODE = 'AUD';
+    const OXIPAY_AU_COUNTRY_CODE = 'AU';
+    const OXIPAY_NZ_CURRENCY_CODE = 'NZD';
+    const OXIPAY_NZ_COUNTRY_CODE = 'NZ';
 
     /**
      * GET: /oxipayments/payment/start
@@ -28,7 +30,7 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
                 Mage::logException($ex);
                 Mage::log('An exception was encountered in oxipayments/paymentcontroller: ' . $ex->getMessage(), Zend_Log::ERR, self::LOG_FILE);
                 Mage::log($ex->getTraceAsString(), Zend_Log::ERR, self::LOG_FILE);
-                $this->_getCheckoutSession()->addError($this->__('Unable to start Oxipay Checkout.'));
+                $this->getCheckoutSession()->addError($this->__('Unable to start Oxipay Checkout.'));
             }
         } else {
             $this->restoreCart($this->getLastRealOrder());
@@ -89,6 +91,13 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
             return;
         }
 
+        // ensure that we have a Mage_Sales_Model_Order
+        if (get_class($order) !== 'Mage_Sales_Model_Order') {
+            Mage::log("The instance of order returned is an unexpected type.", Zend_Log::ERR, self::LOG_FILE);
+            $this->_redirect('checkout/onepage/error', array('_secure'=> false));
+            return;
+        }
+
         if($result == "completed" && $order->getState() === Mage_Sales_Model_Order::STATE_PROCESSING) {
             $this->_redirect('checkout/onepage/success', array('_secure'=> false));
             return;
@@ -109,7 +118,7 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
             if (!$this->statusExists($orderStatus)) {
                 $orderStatus = $order->getConfig()->getStateDefaultStatus($orderState);
             }
-            
+
             $emailCustomer = Mage::getStoreConfig('payment/oxipayments/email_customer');
             if ($emailCustomer) {
                 $order->sendNewOrderEmail();
@@ -122,7 +131,7 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
             if ($invoiceAutomatically) {
                 $this->invoiceOrder($order);
             }
-            
+
             Mage::getSingleton('checkout/session')->unsQuoteId();
             $this->_redirect('checkout/onepage/success', array('_secure'=> false));
         }
@@ -159,23 +168,24 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
         return false;
     }
 
-    private function invoiceOrder($order) {
+    private function invoiceOrder(Mage_Sales_Model_Order $order) {
+
         if(!$order->canInvoice()){
-                Mage::throwException(Mage::helper('core')->__('Cannot create an invoice.'));
+            Mage::throwException(Mage::helper('core')->__('Cannot create an invoice.'));
         }
-            
+
         $invoice = Mage::getModel('sales/service_order', $order)->prepareInvoice();
-            
+
         if (!$invoice->getTotalQty()) {
             Mage::throwException(Mage::helper('core')->__('Cannot create an invoice without products.'));
         }
-            
+
         $invoice->setRequestedCaptureCase(Mage_Sales_Model_Order_Invoice::CAPTURE_ONLINE);
         $invoice->register();
         $transactionSave = Mage::getModel('core/resource_transaction')
         ->addObject($invoice)
         ->addObject($invoice->getOrder());
-        
+
         $transactionSave->save();
     }
 
@@ -194,36 +204,42 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
         $billingAddress = $order->getBillingAddress();
 
         $billingAddressParts = explode(PHP_EOL, $billingAddress->getData('street'));
-        $shippingAddressParts = explode(PHP_EOL, $shippingAddress->getData('street')); 
+        $billingAddress0 = $billingAddressParts[0];
+        $billingAddress1 = (count($billingAddressParts)>1)? $billingAddressParts[1]:'';
 
-        $orderId = $order->getRealOrderId();
+        $shippingAddressParts = explode(PHP_EOL, $shippingAddress->getData('street'));
+        $shippingAddress0 = $shippingAddressParts[0];
+        $shippingAddress1 = (count($shippingAddressParts)>1)? $shippingAddressParts[1]:'';
+
+        $orderId = (int)$order->getRealOrderId();
+        $canceledURL  = Oxipay_Oxipayments_Helper_Data::getCancelledUrl($orderId);
         $data = array(
-            'x_currency' => str_replace(PHP_EOL, ' ', $order->getOrderCurrencyCode()),
-            'x_url_callback' => str_replace(PHP_EOL, ' ', Oxipay_Oxipayments_Helper_Data::getCompleteUrl()),
-            'x_url_complete' => str_replace(PHP_EOL, ' ', Oxipay_Oxipayments_Helper_Data::getCompleteUrl()),
-            'x_url_cancel' => str_replace(PHP_EOL, ' ', Oxipay_Oxipayments_Helper_Data::getCancelledUrl($orderId)),
-            'x_shop_name' => str_replace(PHP_EOL, ' ', Mage::app()->getStore()->getCode()),
-            'x_account_id' => str_replace(PHP_EOL, ' ', Mage::getStoreConfig('payment/oxipayments/merchant_number')),
-            'x_reference' => str_replace(PHP_EOL, ' ', $orderId),
-            'x_invoice' => str_replace(PHP_EOL, ' ', $orderId),
-            'x_amount' => str_replace(PHP_EOL, ' ', $order->getTotalDue()),
+            'x_currency'            => str_replace(PHP_EOL, ' ', $order->getOrderCurrencyCode()),
+            'x_url_callback'        => str_replace(PHP_EOL, ' ', Oxipay_Oxipayments_Helper_Data::getCompleteUrl()),
+            'x_url_complete'        => str_replace(PHP_EOL, ' ', Oxipay_Oxipayments_Helper_Data::getCompleteUrl()),
+            'x_url_cancel'          => str_replace(PHP_EOL, ' ', Oxipay_Oxipayments_Helper_Data::getCancelledUrl($orderId)),
+            'x_shop_name'           => str_replace(PHP_EOL, ' ', Mage::app()->getStore()->getCode()),
+            'x_account_id'          => str_replace(PHP_EOL, ' ', Mage::getStoreConfig('payment/oxipayments/merchant_number')),
+            'x_reference'           => str_replace(PHP_EOL, ' ', $orderId),
+            'x_invoice'             => str_replace(PHP_EOL, ' ', $orderId),
+            'x_amount'              => str_replace(PHP_EOL, ' ', $order->getTotalDue()),
             'x_customer_first_name' => str_replace(PHP_EOL, ' ', $order->getCustomerFirstname()),
-            'x_customer_last_name' => str_replace(PHP_EOL, ' ', $order->getCustomerLastname()),
-            'x_customer_email' => str_replace(PHP_EOL, ' ', $order->getData('customer_email')),
-            'x_customer_phone' => str_replace(PHP_EOL, ' ', $billingAddress->getData('telephone')),
-            'x_customer_billing_address1' => $billingAddressParts[0],
-            'x_customer_billing_address2' => $billingAddressParts[1],
-            'x_customer_billing_city' => str_replace(PHP_EOL, ' ', $billingAddress->getData('city')),
-            'x_customer_billing_state' => str_replace(PHP_EOL, ' ', $billingAddress->getData('region')),
-            'x_customer_billing_zip' => str_replace(PHP_EOL, ' ', $billingAddress->getData('postcode')),
-            'x_customer_shipping_address1' => $shippingAddressParts[0],
-            'x_customer_shipping_address2' => $shippingAddressParts[1],
-            'x_customer_shipping_city' => str_replace(PHP_EOL, ' ', $shippingAddress->getData('city')),
-            'x_customer_shipping_state' => str_replace(PHP_EOL, ' ', $shippingAddress->getData('region')),
-            'x_customer_shipping_zip' => str_replace(PHP_EOL, ' ', $shippingAddress->getData('postcode')),
-            'x_test' => 'false'
+            'x_customer_last_name'  => str_replace(PHP_EOL, ' ', $order->getCustomerLastname()),
+            'x_customer_email'      => str_replace(PHP_EOL, ' ', $order->getData('customer_email')),
+            'x_customer_phone'      => str_replace(PHP_EOL, ' ', $billingAddress->getData('telephone')),
+            'x_customer_billing_address1'  => $billingAddress0,
+            'x_customer_billing_address2'  => $billingAddress1,
+            'x_customer_billing_city'      => str_replace(PHP_EOL, ' ', $billingAddress->getData('city')),
+            'x_customer_billing_state'     => str_replace(PHP_EOL, ' ', $billingAddress->getData('region')),
+            'x_customer_billing_zip'       => str_replace(PHP_EOL, ' ', $billingAddress->getData('postcode')),
+            'x_customer_shipping_address1' => $shippingAddress0,
+            'x_customer_shipping_address2' => $shippingAddress1,
+            'x_customer_shipping_city'     => str_replace(PHP_EOL, ' ', $shippingAddress->getData('city')),
+            'x_customer_shipping_state'    => str_replace(PHP_EOL, ' ', $shippingAddress->getData('region')),
+            'x_customer_shipping_zip'      => str_replace(PHP_EOL, ' ', $shippingAddress->getData('postcode')),
+            'x_test'                       => 'false'
         );
-        $apiKey = $this->getApiKey();
+        $apiKey    = $this->getApiKey();
         $signature = Oxipay_Oxipayments_Helper_Crypto::generateSignature($data, $apiKey);
         $data['x_signature'] = $signature;
 
@@ -236,19 +252,29 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
      */
     private function validateQuote()
     {
+        $specificCurrency = null;
+
+        if ($this->getSpecificCountry() == self::OXIPAY_AU_COUNTRY_CODE) {
+            $specificCurrency = self::OXIPAY_AU_CURRENCY_CODE;
+        }
+        else if ($this->getSpecificCountry() == self::OXIPAY_NZ_COUNTRY_CODE) {
+            $specificCurrency = self::OXIPAY_NZ_CURRENCY_CODE;
+        }
+
         $order = $this->getLastRealOrder();
+
         if($order->getTotalDue() < 20) {
             Mage::getSingleton('checkout/session')->addError("Oxipay doesn't support purchases less than $20.");
             return false;
         }
 
-        if($order->getBillingAddress()->getCountry() != self::OXIPAY_DEFAULT_COUNTRY_CODE || $order->getOrderCurrencyCode() != self::OXIPAY_DEFAULT_CURRENCY_CODE) {
-            Mage::getSingleton('checkout/session')->addError("Oxipay doesn't support purchases from outside Australia.");
+        if($order->getBillingAddress()->getCountry() != $this->getSpecificCountry() || $order->getOrderCurrencyCode() != $specificCurrency ) {
+            Mage::getSingleton('checkout/session')->addError("Orders from this country are not supported by Oxipay. Please select a different payment option.");
             return false;
         }
 
-        if($order->getShippingAddress()->getCountry() != self::OXIPAY_DEFAULT_COUNTRY_CODE) {
-            Mage::getSingleton('checkout/session')->addError("Oxipay doesn't support purchases shipped outside Australia.");
+        if($order->getShippingAddress()->getCountry() != $this->getSpecificCountry()) {
+            Mage::getSingleton('checkout/session')->addError("Orders shipped to this country are not supported by Oxipay. Please select a different payment option.");
             return false;
         }
 
@@ -308,6 +334,16 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
     }
 
     /**
+    * Get specific country
+    *
+    * @return string
+    */
+    public function getSpecificCountry()
+    {
+      return Mage::getStoreConfig('payment/oxipayments/specificcountry');
+    }
+
+    /**
      * retrieve the last order created by this session
      * @return null
      */
@@ -325,7 +361,7 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
     /**
      * Method is called when an order is cancelled by a customer. As an Oxipay reference is only passed back to
      * Magento upon a success or decline outcome, the method will return a message with a Magento reference only.
-     * 
+     *
      * @param Mage_Sales_Model_Order $order
      * @return $this
      * @throws Exception

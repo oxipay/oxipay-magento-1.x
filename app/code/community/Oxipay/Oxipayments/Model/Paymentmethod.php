@@ -24,3 +24,5 @@ class Oxipay_Oxipayments_Model_Paymentmethod extends Mage_Payment_Model_Method_A
         return Mage::getUrl('oxipayments/payment/start', array('_secure' => false));
     }
 }
+
+?>

@@ -4,7 +4,7 @@
     <!-- Module Metadata -->
     <modules>
         <Oxipay_Oxipayments>
-            <version>0.4.0</version>
+            <version>oxipay_plugin_version_placeholder</version>
         </Oxipay_Oxipayments>
     </modules>
     <!-- End Module Metadata -->
@@ -54,14 +54,35 @@
                 <allowspecific>0</allowspecific>
                 <payment_action>sale</payment_action>
                 <gateway_url></gateway_url>
+                <specificcountry>AU,NZ</specificcountry>
                 <merchant_number></merchant_number>
                 <api_key></api_key>
                 <automatic_invoice>0</automatic_invoice> <!-- 0:No -->
                 <email_customer>1</email_customer>
             </oxipayments>
         </payment>
+        <oxipay>
+            <cron>
+                <pending_payment_timeout>90</pending_payment_timeout> <!-- Not used yet -->
+            </cron>
+        </oxipay>
     </default>
     <!-- End Payment Method Default Configuration Values -->
+
+    <!-- Crontab configuration -->
+    <crontab>
+        <jobs>
+            <Oxipay_cancelOxipayPendingOrders>
+                <schedule>
+                    <cron_expr>*/2 * * * *</cron_expr>
+                </schedule>
+                <run>
+                    <model>oxipayments/observer::cancelOxipayPendingOrders</model>
+                </run>
+            </Oxipay_cancelOxipayPendingOrders>
+        </jobs>
+    </crontab>
+    <!-- End Crontab configuration -->
 
     <!-- Routing Configuration -->
     <frontend>
