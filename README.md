@@ -15,7 +15,7 @@ Once copied - you should be able to see the oxipay plugin loaded in magento (not
 
 Please find more details from 
 http://docs.oxipay.com.au/platforms/magento_1/  (for Australia)
-http://docs.oxipay.com.au/platforms/magento_1/  (for New Zealand)
+http://docs.oxipay.co.nz/platforms/magento_1/  (for New Zealand)
 
 ## Varnish cache exclusions
 
