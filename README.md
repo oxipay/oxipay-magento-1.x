@@ -2,16 +2,20 @@
 
 ## Installation
 
-To deploy the plugin, clone this repo, and then copy the app directory into your magento instance. E.g.
+To deploy the plugin, clone this repo, and copy the following plugin files and folders into the corresponding folder on the `app` folder on the Magento root directory.
 
 ```bash
-git clone https://github.com/oxipay/oxipay-magento-1.x ~/oxipay
-
-cp ~/oxipay/app/* /path/to/magento/app
-
+/app/code/community/Oxipay
+/app/design/frontend/base/default/template/oxipayments
+/app/design/adminhtml/base/default/template/oxipayments
+/app/etc/modules/Oxipay_Oxipayments.xml
 ```
 
 Once copied - you should be able to see the oxipay plugin loaded in magento (note this may require a cache flush/site reload)
+
+Please find more details from 
+http://docs.oxipay.com.au/platforms/magento_1/  (for Australia)
+http://docs.oxipay.com.au/platforms/magento_1/  (for New Zealand)
 
 ## Varnish cache exclusions
 
