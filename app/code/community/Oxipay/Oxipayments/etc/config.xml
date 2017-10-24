@@ -72,14 +72,14 @@
     <!-- Crontab configuration -->
     <crontab>
         <jobs>
-            <Oxipay_cancelOxipayPendingOrders>
+            <!-- <Oxipay_cancelOxipayPendingOrders>
                 <schedule>
                     <cron_expr>*/2 * * * *</cron_expr>
                 </schedule>
                 <run>
                     <model>oxipayments/observer::cancelOxipayPendingOrders</model>
                 </run>
-            </Oxipay_cancelOxipayPendingOrders>
+            </Oxipay_cancelOxipayPendingOrders> -->
         </jobs>
     </crontab>
     <!-- End Crontab configuration -->
