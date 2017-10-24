@@ -63,14 +63,14 @@
         </payment>
         <oxipay>
             <cron>
-                <pending_payment_timeout>90</pending_payment_timeout> <!-- Not used yet -->
+                <pending_payment_timeout>5400</pending_payment_timeout> <!-- Not used yet -->
             </cron>
         </oxipay>
     </default>
     <!-- End Payment Method Default Configuration Values -->
 
     <!-- Crontab configuration -->
-    <!-- <crontab>
+    <crontab>
         <jobs>
             <Oxipay_cancelOxipayPendingOrders>
                 <schedule>
@@ -81,7 +81,7 @@
                 </run>
             </Oxipay_cancelOxipayPendingOrders>
         </jobs>
-    </crontab> -->
+    </crontab>
     <!-- End Crontab configuration -->
 
     <!-- Routing Configuration -->
