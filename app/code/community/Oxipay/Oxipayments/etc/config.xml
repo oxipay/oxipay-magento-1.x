@@ -70,7 +70,7 @@
     <!-- End Payment Method Default Configuration Values -->
 
     <!-- Crontab configuration -->
-    <crontab>
+    <!-- <crontab>
         <jobs>
             <Oxipay_cancelOxipayPendingOrders>
                 <schedule>
@@ -81,7 +81,7 @@
                 </run>
             </Oxipay_cancelOxipayPendingOrders>
         </jobs>
-    </crontab>
+    </crontab> -->
     <!-- End Crontab configuration -->
 
     <!-- Routing Configuration -->
