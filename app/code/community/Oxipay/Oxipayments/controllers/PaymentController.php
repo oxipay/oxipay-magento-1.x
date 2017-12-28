@@ -23,6 +23,7 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
 
                 //Mage_Sales_Model_Order::setState($state, $status=false, $comment='', $isCustomerNotified=false)
                 $order->setState(Mage_Sales_Model_Order::STATE_PENDING_PAYMENT, true, 'Oxipay authorisation underway.');
+                $order->setStatus(Oxipay_Oxipayments_Helper_OrderStatus::STATUS_PENDING_PAYMENT);
                 $order->save();
 
                 $this->postToCheckout(Oxipay_Oxipayments_Helper_Data::getCheckoutUrl(), $payload);
@@ -137,10 +138,18 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
         }
         else
         {
-            $order->addStatusHistoryComment($this->__("Order #".($order->getId())." was rejected by oxipay. Transaction #$transactionId."));
-
+            $order->addStatusHistoryComment($this->__("Order #".($order->getId())." was declined by oxipay. Transaction #$transactionId."));
+            if (!$order->isCanceled()) {
+                $order
+                    ->cancel()
+                    ->setStatus(Oxipay_Oxipayments_Helper_OrderStatus::STATUS_DECLINED)
+                    ->addStatusHistoryComment($this->__("Order #".($order->getId())." was canceled by customer."));
+            }
+            
+            
             $order->save();
-            $this->restoreCart($order, true);
+            // $this->restoreCart($order, true);
+            $this->restoreCart($order);
 
             //Mage::getSingleton('checkout/session')->unsQuoteId();
             $this->_redirect('checkout/onepage/failure', array('_secure'=> false));
@@ -298,9 +307,9 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
         "<html>
             <body>
             <form id='form' action='$checkoutUrl' method='post'>";
-        foreach ($payload as $key => $value) {
-            echo "<input type='hidden' id='$key' name='$key' value='".htmlspecialchars($value, ENT_QUOTES)."'/>";
-        }
+            foreach ($payload as $key => $value) {
+                echo "<input type='hidden' id='$key' name='$key' value='".htmlspecialchars($value, ENT_QUOTES)."'/>";
+            }
         echo
         '</form>
             </body>';
@@ -369,6 +378,7 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
         if (!$order->isCanceled()) {
             $order
                 ->cancel()
+                ->setStatus(Oxipay_Oxipayments_Helper_OrderStatus::STATUS_CANCELED)
                 ->addStatusHistoryComment($this->__("Order #".($order->getId())." was canceled by customer."));
         }
         return $this;
