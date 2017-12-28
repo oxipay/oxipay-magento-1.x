@@ -23,6 +23,7 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
 
                 //Mage_Sales_Model_Order::setState($state, $status=false, $comment='', $isCustomerNotified=false)
                 $order->setState(Mage_Sales_Model_Order::STATE_PENDING_PAYMENT, true, 'Oxipay authorisation underway.');
+                $order->setStatus(Oxipay_Oxipayments_Helper_OrderStatus::STATUS_PENDING_PAYMENT);
                 $order->save();
 
                 $this->postToCheckout(Oxipay_Oxipayments_Helper_Data::getCheckoutUrl(), $payload);
@@ -124,7 +125,7 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
                 $order->sendNewOrderEmail();
             }
             $order->setState($orderState, $orderStatus ? $orderStatus : true, $this->__("Oxipay authorisation success. Transaction #$transactionId"), $emailCustomer);
-
+            
             $order->save();
 
             $invoiceAutomatically = Mage::getStoreConfig('payment/oxipayments/automatic_invoice');
@@ -137,14 +138,20 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
         }
         else
         {
-            $order
-                ->cancel()
-                ->addStatusHistoryComment($this->__("Order #".($order->getId())." was rejected by oxipay. Transaction #$transactionId."));
-
-            $this->restoreCart($order);
+            $order->addStatusHistoryComment($this->__("Order #".($order->getId())." was declined by oxipay. Transaction #$transactionId."));
+            if (!$order->isCanceled()) {
+                $order
+                    ->cancel()
+                    ->setStatus(Oxipay_Oxipayments_Helper_OrderStatus::STATUS_DECLINED)
+                    ->addStatusHistoryComment($this->__("Order #".($order->getId())." was canceled by customer."));
+            }
+            
+            
             $order->save();
+            // $this->restoreCart($order, true);
+            $this->restoreCart($order);
 
-            Mage::getSingleton('checkout/session')->unsQuoteId();
+            //Mage::getSingleton('checkout/session')->unsQuoteId();
             $this->_redirect('checkout/onepage/failure', array('_secure'=> false));
         }
 
@@ -300,9 +307,9 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
         "<html>
             <body>
             <form id='form' action='$checkoutUrl' method='post'>";
-        foreach ($payload as $key => $value) {
-            echo "<input type='hidden' id='$key' name='$key' value='".htmlspecialchars($value, ENT_QUOTES)."'/>";
-        }
+            foreach ($payload as $key => $value) {
+                echo "<input type='hidden' id='$key' name='$key' value='".htmlspecialchars($value, ENT_QUOTES)."'/>";
+            }
         echo
         '</form>
             </body>';
@@ -371,6 +378,7 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
         if (!$order->isCanceled()) {
             $order
                 ->cancel()
+                ->setStatus(Oxipay_Oxipayments_Helper_OrderStatus::STATUS_CANCELED)
                 ->addStatusHistoryComment($this->__("Order #".($order->getId())." was canceled by customer."));
         }
         return $this;
@@ -381,15 +389,90 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
      * @param Mage_Sales_Model_Order $order
      * @return $this
      */
-    private function restoreCart(Mage_Sales_Model_Order $order)
+    private function restoreCart(Mage_Sales_Model_Order $order, $refillStock = false)
     {
         // return all products to shopping cart
-        $quote = Mage::getModel('sales/quote')->load($order->getQuoteId());
+        $quoteId = $order->getQuoteId();
+        $quote   = Mage::getModel('sales/quote')->load($quoteId);
+
         if ($quote->getId()) {
-            $quote->setIsActive(1)->setReservedOrderId(null)->save();
+            $quote->setIsActive(1);
+            if ($refillStock) {
+                $items = $this->_getProductsQty($quote->getAllItems());
+                if ($items != null ) {
+                    Mage::getSingleton('cataloginventory/stock')->revertProductsSale($items);
+                }
+            }
+
+            $quote->setReservedOrderId(null);
+            $quote->save();
             $this->getCheckoutSession()->replaceQuote($quote);
         }
         return $this;
     }
 
+    /**
+     * Prepare array with information about used product qty and product stock item
+     * result is:
+     * array(
+     *  $productId  => array(
+     *      'qty'   => $qty,
+     *      'item'  => $stockItems|null
+     *  )
+     * )
+     * @param array $relatedItems
+     * @return array
+     */
+    protected function _getProductsQty($relatedItems)
+    {
+        $items = array();
+        foreach ($relatedItems as $item) {
+            $productId  = $item->getProductId();
+            if (!$productId) {
+                continue;
+            }
+            $children = $item->getChildrenItems();
+            if ($children) {
+                foreach ($children as $childItem) {
+                    $this->_addItemToQtyArray($childItem, $items);
+                }
+            } else {
+                $this->_addItemToQtyArray($item, $items);
+            }
+        }
+        return $items;
+    }
+
+
+    /**
+     * Adds stock item qty to $items (creates new entry or increments existing one)
+     * $items is array with following structure:
+     * array(
+     *  $productId  => array(
+     *      'qty'   => $qty,
+     *      'item'  => $stockItems|null
+     *  )
+     * )
+     *
+     * @param Mage_Sales_Model_Quote_Item $quoteItem
+     * @param array &$items
+     */
+    protected function _addItemToQtyArray($quoteItem, &$items)
+    {
+        $productId = $quoteItem->getProductId();
+        if (!$productId)
+            return;
+        if (isset($items[$productId])) {
+            $items[$productId]['qty'] += $quoteItem->getTotalQty();
+        } else {
+            $stockItem = null;
+            if ($quoteItem->getProduct()) {
+                $stockItem = $quoteItem->getProduct()->getStockItem();
+            }
+            $items[$productId] = array(
+                'item' => $stockItem,
+                'qty'  => $quoteItem->getTotalQty()
+            );
+        }
+    }
 }

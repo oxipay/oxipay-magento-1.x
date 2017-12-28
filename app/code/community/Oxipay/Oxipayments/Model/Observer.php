@@ -22,7 +22,7 @@ class Oxipay_Oxipayments_Model_Observer
             array()
         );
         $orderCollection
-            ->addFieldToFilter('main_table.state', Mage_Sales_Model_Order::STATE_PENDING_PAYMENT)
+            ->addFieldToFilter('main_table.state', Oxipay_Oxipayments_Helper_OrderStatus::STATUS_PENDING_PAYMENT)
             ->addFieldToFilter('p.method', array('like' => 'oxipay%'))
             ->addFieldToFilter('main_table.created_at', array('lt' =>  new Zend_Db_Expr("DATE_ADD('".now()."', INTERVAL -'90:00' HOUR_MINUTE)")));
 
