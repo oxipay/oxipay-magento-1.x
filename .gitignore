@@ -35,5 +35,26 @@ app/etc/modules/*
 
 # local media file
 !skin
+skin/*
+!skin/frontend
+skin/frontend/*
+!skin/frontend/base
+skin/frontend/base/*
+!skin/frontend/base/default
+skin/frontend/base/default/*
+!skin/frontend/base/default/images
+skin/frontend/base/default/images/*
+!skin/frontend/base/default/images/Oxipay
+
+!skin/adminhtml
+skin/adminhtml/*
+!skin/adminhtml/base
+skin/adminhtml/base/*
+!skin/adminhtml/base/default
+skin/adminhtml/base/default/*
+!skin/adminhtml/base/default/images
+skin/adminhtml/base/default/images/*
+!skin/adminhtml/base/default/images/Oxipay
+
 
 !.gitignore
