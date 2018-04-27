@@ -49,6 +49,12 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
         $order =  $this->getOrderById($orderId);
 
         if ($order && $order->getId()) {
+            $signatureValid = ($this->getRequest()->get('signature'))==Oxipay_Oxipayments_Helper_Crypto::generateSignature(["orderId"=>(int)$order->getRealOrderId()], $this->getApiKey());
+            if(!$signatureValid) {
+                Mage::log('Possible site forgery detected: invalid response signature.', Zend_Log::ALERT, self::LOG_FILE);
+                $this->_redirect('checkout/onepage/error', array('_secure'=> false));
+                return;
+            }
             Mage::log(
                 'Requested order cancellation by customer. OrderId: ' . $order->getIncrementId(),
                 Zend_Log::DEBUG,
@@ -219,12 +225,11 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
         $shippingAddress1 = (count($shippingAddressParts)>1)? $shippingAddressParts[1]:'';
 
         $orderId = (int)$order->getRealOrderId();
-        $canceledURL  = Oxipay_Oxipayments_Helper_Data::getCancelledUrl($orderId);
         $data = array(
             'x_currency'            => str_replace(PHP_EOL, ' ', $order->getOrderCurrencyCode()),
             'x_url_callback'        => str_replace(PHP_EOL, ' ', Oxipay_Oxipayments_Helper_Data::getCompleteUrl()),
             'x_url_complete'        => str_replace(PHP_EOL, ' ', Oxipay_Oxipayments_Helper_Data::getCompleteUrl()),
-            'x_url_cancel'          => str_replace(PHP_EOL, ' ', Oxipay_Oxipayments_Helper_Data::getCancelledUrl($orderId)),
+            'x_url_cancel'          => str_replace(PHP_EOL, ' ', Oxipay_Oxipayments_Helper_Data::getCancelledUrl($orderId). "&signature=". Oxipay_Oxipayments_Helper_Crypto::generateSignature(["orderId"=>$orderId], $this->getApiKey())),
             'x_shop_name'           => str_replace(PHP_EOL, ' ', Mage::app()->getStore()->getCode()),
             'x_account_id'          => str_replace(PHP_EOL, ' ', Mage::getStoreConfig('payment/oxipayments/merchant_number')),
             'x_reference'           => str_replace(PHP_EOL, ' ', $orderId),
