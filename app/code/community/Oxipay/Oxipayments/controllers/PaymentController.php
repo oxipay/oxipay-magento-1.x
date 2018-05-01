@@ -107,7 +107,7 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
             return;
         }
 
-        if($result == "completed" && $order->getState() === Mage_Sales_Model_Order::STATE_PROCESSING) {
+        if($result == "completed" && ($order->getState() === Mage_Sales_Model_Order::STATE_PROCESSING || $order->getState() === Mage_Sales_Model_Order::STATE_COMPLETE )) {
             $this->_redirect('checkout/onepage/success', array('_secure'=> false));
             return;
         }
@@ -222,9 +222,20 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
         $billingAddress0 = $billingAddressParts[0];
         $billingAddress1 = (count($billingAddressParts)>1)? $billingAddressParts[1]:'';
 
-        $shippingAddressParts = explode(PHP_EOL, $shippingAddress->getData('street'));
-        $shippingAddress0 = $shippingAddressParts[0];
-        $shippingAddress1 = (count($shippingAddressParts)>1)? $shippingAddressParts[1]:'';
+        if (!empty($shippingAddress)){
+            $shippingAddressParts = explode(PHP_EOL, $shippingAddress->getData('street'));
+            $shippingAddress0 = $shippingAddressParts[0];
+            $shippingAddress1 = (count($shippingAddressParts)>1)? $shippingAddressParts[1]:'';
+            $shippingAddress_city = $shippingAddress->getData('city');
+            $shippingAddress_region = $shippingAddress->getData('region');
+            $shippingAddress_postcode = $shippingAddress->getData('postcode');
+        } else {
+            $shippingAddress0 = "";
+            $shippingAddress1 = "";
+            $shippingAddress_city = "";
+            $shippingAddress_region = "";
+            $shippingAddress_postcode = "";
+        }
 
         $orderId = (int)$order->getRealOrderId();
         $cancel_signature_query = ["orderId"=>$orderId, "amount"=>$order->getTotalDue(), "email"=>$order->getData('customer_email'), "firstname"=>$order->getCustomerFirstname(), "lastname"=>$order->getCustomerLastname()];
@@ -250,9 +261,9 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
             'x_customer_billing_zip'       => str_replace(PHP_EOL, ' ', $billingAddress->getData('postcode')),
             'x_customer_shipping_address1' => $shippingAddress0,
             'x_customer_shipping_address2' => $shippingAddress1,
-            'x_customer_shipping_city'     => str_replace(PHP_EOL, ' ', $shippingAddress->getData('city')),
-            'x_customer_shipping_state'    => str_replace(PHP_EOL, ' ', $shippingAddress->getData('region')),
-            'x_customer_shipping_zip'      => str_replace(PHP_EOL, ' ', $shippingAddress->getData('postcode')),
+            'x_customer_shipping_city'     => str_replace(PHP_EOL, ' ', $shippingAddress_city),
+            'x_customer_shipping_state'    => str_replace(PHP_EOL, ' ', $shippingAddress_region),
+            'x_customer_shipping_zip'      => str_replace(PHP_EOL, ' ', $shippingAddress_postcode),
             'x_test'                       => 'false'
         );
         $apiKey    = $this->getApiKey();
@@ -289,7 +300,7 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
             return false;
         }
 
-        if($order->getShippingAddress()->getCountry() != $this->getSpecificCountry()) {
+        if( !$order->isVirtual && $order->getShippingAddress()->getCountry() != $this->getSpecificCountry()) {
             Mage::getSingleton('checkout/session')->addError("Orders shipped to this country are not supported by Oxipay. Please select a different payment option.");
             return false;
         }
