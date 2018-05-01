@@ -107,7 +107,7 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
             return;
         }
 
-        if($result == "completed" && $order->getState() === Mage_Sales_Model_Order::STATE_PROCESSING) {
+        if($result == "completed" && ($order->getState() === Mage_Sales_Model_Order::STATE_PROCESSING || $order->getState() === Mage_Sales_Model_Order::STATE_COMPLETE )) {
             $this->_redirect('checkout/onepage/success', array('_secure'=> false));
             return;
         }
