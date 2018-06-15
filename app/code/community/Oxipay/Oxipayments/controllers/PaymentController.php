@@ -21,10 +21,22 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
                 $order = $this->getLastRealOrder();
                 $payload = $this->getPayload($order);
 
-                //Mage_Sales_Model_Order::setState($state, $status=false, $comment='', $isCustomerNotified=false)
-                $order->setState(Mage_Sales_Model_Order::STATE_PENDING_PAYMENT, true, 'Oxipay authorisation underway.');
-                $order->setStatus(Oxipay_Oxipayments_Helper_OrderStatus::STATUS_PENDING_PAYMENT);
-                $order->save();
+                $this->restoreCart($order);
+                $quote = Mage::getModel('checkout/session')->getQuote();
+                $customer = Mage::getSingleton('customer/session')->getCustomer();
+                // var_dump($order);
+                // var_dump($quote);
+                // return;
+                $_SESSION['quote'] = (serialize($quote));
+                $_SESSION['customer'] = (serialize($customer));
+
+                // delete order
+                Mage::getResourceSingleton('sales/order')->delete($order);
+
+                // Mage_Sales_Model_Order::setState($state, $status=false, $comment='', $isCustomerNotified=false)
+                // $order->setState(Mage_Sales_Model_Order::STATE_PENDING_PAYMENT, true, 'Oxipay authorisation underway.');
+                // $order->setStatus(Oxipay_Oxipayments_Helper_OrderStatus::STATUS_PENDING_PAYMENT);
+                // $order->save();
 
                 $this->postToCheckout(Oxipay_Oxipayments_Helper_Data::getCheckoutUrl(), $payload);
             } catch (Exception $ex) {
@@ -45,27 +57,6 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
      */
     public function cancelAction()
     {
-        $orderId = $this->getRequest()->get('orderId');
-        $order =  $this->getOrderById($orderId);
-
-        if ($order && $order->getId()) {
-            $cancel_signature_query = ["orderId"=>$orderId, "amount"=>$order->getTotalDue(), "email"=>$order->getData('customer_email'), "firstname"=>$order->getCustomerFirstname(), "lastname"=>$order->getCustomerLastname()];
-            $cancel_signature = Oxipay_Oxipayments_Helper_Crypto::generateSignature($cancel_signature_query, $this->getApiKey());
-            $signatureValid = ($this->getRequest()->get('signature') == $cancel_signature);
-            if(!$signatureValid) {
-                Mage::log('Possible site forgery detected: invalid response signature.', Zend_Log::ALERT, self::LOG_FILE);
-                $this->_redirect('checkout/onepage/error', array('_secure'=> false));
-                return;
-            }
-            Mage::log(
-                'Requested order cancellation by customer. OrderId: ' . $order->getIncrementId(),
-                Zend_Log::DEBUG,
-                self::LOG_FILE
-            );
-            $this->cancelOrder($order);
-            $this->restoreCart($order);
-            $order->save();
-        }
         $this->_redirect('checkout/cart');
     }
 
@@ -93,75 +84,100 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
             return;
         }
 
-        $order = $this->getOrderById($orderId);
-        if(!$order) {
-            Mage::log("Oxipay returned an id for an order that could not be retrieved: $orderId", Zend_Log::ERR, self::LOG_FILE);
-            $this->_redirect('checkout/onepage/error', array('_secure'=> false));
-            return;
-        }
+        // $order = $this->getOrderById($orderId);
+        // if(!$order) {
+        //     Mage::log("Oxipay returned an id for an order that could not be retrieved: $orderId", Zend_Log::ERR, self::LOG_FILE);
+        //     $this->_redirect('checkout/onepage/error', array('_secure'=> false));
+        //     return;
+        // }
 
-        // ensure that we have a Mage_Sales_Model_Order
-        if (get_class($order) !== 'Mage_Sales_Model_Order') {
-            Mage::log("The instance of order returned is an unexpected type.", Zend_Log::ERR, self::LOG_FILE);
-            $this->_redirect('checkout/onepage/error', array('_secure'=> false));
-            return;
-        }
+        $quote = unserialize($_SESSION['quote']);
+        $customer = unserialize(($_SESSION['customer']));
 
-        if($result == "completed" && ($order->getState() === Mage_Sales_Model_Order::STATE_PROCESSING || $order->getState() === Mage_Sales_Model_Order::STATE_COMPLETE )) {
-            $this->_redirect('checkout/onepage/success', array('_secure'=> false));
-            return;
-        }
+        // $quote->reserveOrderId();
 
-        if($result == "failed" && $order->getState() === Mage_Sales_Model_Order::STATE_CANCELED) {
-            $this->_redirect('checkout/onepage/failure', array('_secure'=> false));
-            return;
-        }
-
-        //magento likes to have you explicitly hydrate the object, required such that the save on line below doesn't fail
-        $unusedPaymentObject = $order->getPayment();
-
-        if ($result == "completed")
-        {
-            $orderState = Mage_Sales_Model_Order::STATE_PROCESSING;
+        if($result == "completed") {
+            // $orderState = Mage_Sales_Model_Order::STATE_PROCESSING;
+            $orderState = "oxipay approved";
             $orderStatus = Mage::getStoreConfig('payment/oxipayments/oxipay_approved_order_status');
-            if (!$this->statusExists($orderStatus)) {
-                $orderStatus = $order->getConfig()->getStateDefaultStatus($orderState);
-            }
+            // if (!$this->statusExists($orderStatus)) {
+            //     $orderStatus = $order->getConfig()->getStateDefaultStatus($orderState);
+            // }
 
+
+            $quote->setState($orderState, $orderStatus ? $orderStatus : true, $this->__("Oxipay authorisation success. Transaction #$transactionId"), $emailCustomer);
+            $quote->collectTotals();
+            $quote->save();
+            $order = Mage::getModel('sales/convert_quote')->toOrder($quote);
+
+            // ensure that we have a Mage_Sales_Model_Order
+            if (get_class($order) !== 'Mage_Sales_Model_Order') {
+                Mage::log("The instance of order returned is an unexpected type.", Zend_Log::ERR, self::LOG_FILE);
+                $this->_redirect('checkout/onepage/error', array('_secure'=> false));
+                return;
+            }
+            
+            $service = Mage::getModel('sales/service_quote', $quote);
+            $service->submitAll(); 
+
+            // $orderId = $quote;
+            // $order = $this->getOrderById($orderId);
+            $order = $this->getLastRealOrder();
+            $order->setState("oxipay approved state", true, 'Oxipay authorisation underway.', true);
+            $order->setStatus("oxipay approved status");
+            $order->save();
+
+            // send email
             $emailCustomer = Mage::getStoreConfig('payment/oxipayments/email_customer');
             if ($emailCustomer) {
                 $order->sendNewOrderEmail();
             }
-            $order->setState($orderState, $orderStatus ? $orderStatus : true, $this->__("Oxipay authorisation success. Transaction #$transactionId"), $emailCustomer);
             
-            $order->save();
-
+            // generate invoice
             $invoiceAutomatically = Mage::getStoreConfig('payment/oxipayments/automatic_invoice');
             if ($invoiceAutomatically) {
                 $this->invoiceOrder($order);
             }
 
+            // clear shopping cart
+            Mage::getSingleton('checkout/cart')->truncate()->save();
+
+            // go to success page
             Mage::getSingleton('checkout/session')->unsQuoteId();
             $this->_redirect('checkout/onepage/success', array('_secure'=> false));
+            return;
         }
-        else
-        {
-            $order->addStatusHistoryComment($this->__("Order #".($order->getId())." was declined by oxipay. Transaction #$transactionId."));
-            if (!$order->isCanceled()) {
-                $order
-                    ->cancel()
-                    ->setStatus(Oxipay_Oxipayments_Helper_OrderStatus::STATUS_DECLINED)
-                    ->addStatusHistoryComment($this->__("Order #".($order->getId())." was canceled by customer."));
-            }
-            
-            
-            $order->save();
-            // $this->restoreCart($order, true);
-            $this->restoreCart($order);
 
-            //Mage::getSingleton('checkout/session')->unsQuoteId();
+        if($result == "failed") {
             $this->_redirect('checkout/onepage/failure', array('_secure'=> false));
+            return;
         }
+
+        //magento likes to have you explicitly hydrate the object, required such that the save on line below doesn't fail
+        // $unusedPaymentObject = $order->getPayment();
+
+        // if ($result == "completed")
+        // {
+
+        // }
+        // else
+        // {
+        //     $order->addStatusHistoryComment($this->__("Order #".($order->getId())." was declined by oxipay. Transaction #$transactionId."));
+        //     if (!$order->isCanceled()) {
+        //         $order
+        //             ->cancel()
+        //             ->setStatus(Oxipay_Oxipayments_Helper_OrderStatus::STATUS_DECLINED)
+        //             ->addStatusHistoryComment($this->__("Order #".($order->getId())." was canceled by customer."));
+        //     }
+            
+            
+        //     $order->save();
+        //     // $this->restoreCart($order, true);
+        //     $this->restoreCart($order);
+
+        //     //Mage::getSingleton('checkout/session')->unsQuoteId();
+        //     $this->_redirect('checkout/onepage/failure', array('_secure'=> false));
+        // }
 
     }
 
