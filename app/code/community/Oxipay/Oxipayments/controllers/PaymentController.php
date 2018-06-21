@@ -25,6 +25,8 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
                 $quoteId = $quote->getId();
 
                 $payload = $this->getPayload($order, $quoteId);
+                $quote->setCheckoutMethod(null);
+                $quote->save();
 
                 // delete order
                 Mage::getResourceSingleton('sales/order')->delete($order);
@@ -76,41 +78,50 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
         }
 
         $quote = Mage::getModel('sales/quote')->load($quoteId);
-
-        if($result == "completed") {
-            $orderState = Mage_Sales_Model_Order::STATE_PROCESSING;
-            $orderStatus = Mage::getStoreConfig('payment/oxipayments/oxipay_approved_order_status');
-
-            $quote->collectTotals();
-            $quote->save();
-            
-            $service = Mage::getModel('sales/service_quote', $quote);
-            $service->submitAll(); 
-            $order = $service->getOrder();
-
-            $order->setState(Mage_Sales_Model_Order::STATE_PROCESSING, true, 'Oxipay authorisation underway.');
-            $order->setStatus(Oxipay_Oxipayments_Helper_OrderStatus::STATUS_PROCESSING);
-            $order->save();
-
-            // send email
-            $emailCustomer = Mage::getStoreConfig('payment/oxipayments/email_customer');
-            if ($emailCustomer) {
-                $order->sendNewOrderEmail();
-            }
-            
-            // generate invoice
-            $invoiceAutomatically = Mage::getStoreConfig('payment/oxipayments/automatic_invoice');
-            if ($invoiceAutomatically) {
-                $this->invoiceOrder($order);
+        if($quote){
+            if($quote->getData("checkout_method") == "oxipay"){
+                $this->_redirect('checkout/onepage/success', array('_secure'=> false));
+                return;
             }
 
-            // clear shopping cart
-            Mage::getSingleton('checkout/cart')->truncate()->save();
+            if($result == "completed") {
+                $quote->collectTotals();
+                $quote->save();
+                
+                $service = Mage::getModel('sales/service_quote', $quote);
+                $service->submitAll(); 
+                $order = $service->getOrder();
 
-            // go to success page
-            // Mage::getSingleton('checkout/session')->unsQuoteId();
-            $this->_redirect('checkout/onepage/success', array('_secure'=> false));
-            return;
+                if($order) {
+                    $order->setState(Mage_Sales_Model_Order::STATE_PROCESSING, true, 'Oxipay authorisation underway.');
+                    $order->setStatus(Oxipay_Oxipayments_Helper_OrderStatus::STATUS_PROCESSING);
+                    $order->save();
+
+                    // $quote->setOxipayResult("complete");
+                    $quote->setCheckoutMethod('oxipay');
+                    $quote->save();
+
+                    // send email
+                    $emailCustomer = Mage::getStoreConfig('payment/oxipayments/email_customer');
+                    if ($emailCustomer) {
+                        $order->sendNewOrderEmail();
+                    }
+                    
+                    // generate invoice
+                    $invoiceAutomatically = Mage::getStoreConfig('payment/oxipayments/automatic_invoice');
+                    if ($invoiceAutomatically) {
+                        $this->invoiceOrder($order);
+                    }
+
+                    // clear shopping cart
+                    Mage::getSingleton('checkout/cart')->truncate()->save();
+
+                    $this->_redirect('checkout/onepage/success', array('_secure'=> false));
+                } else {
+                    $this->_redirect('checkout/onepage/failure', array('_secure'=> false));
+                }
+                return;
+            }
         }
 
         if($result == "failed") {
