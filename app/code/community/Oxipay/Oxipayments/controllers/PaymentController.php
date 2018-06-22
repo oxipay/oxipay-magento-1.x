@@ -20,7 +20,7 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
             try {
                 $order = $this->getLastRealOrder();
 
-                $this->restoreCart($order);
+                $this->restoreCart($order, true);
                 $quote = Mage::getModel('checkout/session')->getQuote();
                 $quoteId = $quote->getId();
 
@@ -63,7 +63,6 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
         $result = $this->getRequest()->get("x_result");
         $quoteId = $this->getRequest()->get("x_reference");
         $transactionId = $this->getRequest()->get("x_gateway_reference");
-        $amount = $this->getRequest()->get("x_amount");
 
         if(!$isValid) {
             Mage::log('Possible site forgery detected: invalid response signature.', Zend_Log::ALERT, self::LOG_FILE);
@@ -78,50 +77,54 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
         }
 
         $quote = Mage::getModel('sales/quote')->load($quoteId);
-        if($quote){
-            if($quote->getData("checkout_method") == "oxipay"){
-                $this->_redirect('checkout/onepage/success', array('_secure'=> false));
-                return;
-            }
+        if(!$quote) {
+            Mage::log("Oxipay returned an id for an quote that could not be retrieved: $quoteId", Zend_Log::ERR, self::LOG_FILE);
+            $this->_redirect('checkout/onepage/error', array('_secure'=> false));
+            return;
+        }
 
-            if($result == "completed") {
-                $quote->collectTotals();
-                $quote->save();
-                
-                $service = Mage::getModel('sales/service_quote', $quote);
-                $service->submitAll(); 
-                $order = $service->getOrder();
+        if($quote->getData("checkout_method") == "oxipay"){
+            Mage::getSingleton('checkout/cart')->truncate()->save();
+            $this->_redirect('checkout/onepage/success', array('_secure'=> false));
+            return;
+        }
 
-                if($order) {
-                    $order->setState(Mage_Sales_Model_Order::STATE_PROCESSING, true, 'Oxipay authorisation underway.');
-                    $order->setStatus(Oxipay_Oxipayments_Helper_OrderStatus::STATUS_PROCESSING);
-                    $order->save();
+        $quote->setCheckoutMethod('oxipay');
+        $quote->save();
 
-                    // $quote->setOxipayResult("complete");
-                    $quote->setCheckoutMethod('oxipay');
-                    $quote->save();
+        if($result == "completed") {
+            $quote->collectTotals();
+            $quote->save();
 
-                    // send email
-                    $emailCustomer = Mage::getStoreConfig('payment/oxipayments/email_customer');
-                    if ($emailCustomer) {
-                        $order->sendNewOrderEmail();
-                    }
-                    
-                    // generate invoice
-                    $invoiceAutomatically = Mage::getStoreConfig('payment/oxipayments/automatic_invoice');
-                    if ($invoiceAutomatically) {
-                        $this->invoiceOrder($order);
-                    }
+            $service = Mage::getModel('sales/service_quote', $quote);
+            $service->submitAll(); 
+            $order = $service->getOrder();
 
-                    // clear shopping cart
-                    Mage::getSingleton('checkout/cart')->truncate()->save();
+            if($order) {
+                $order->setState(Mage_Sales_Model_Order::STATE_PROCESSING, true, 'Oxipay processed.');
+                $order->setStatus(Oxipay_Oxipayments_Helper_OrderStatus::STATUS_PROCESSING);
+                $order->save();
 
-                    $this->_redirect('checkout/onepage/success', array('_secure'=> false));
-                } else {
-                    $this->_redirect('checkout/onepage/failure', array('_secure'=> false));
+                // send email
+                $emailCustomer = Mage::getStoreConfig('payment/oxipayments/email_customer');
+                if ($emailCustomer) {
+                    $order->sendNewOrderEmail();
                 }
-                return;
+                
+                // generate invoice
+                $invoiceAutomatically = Mage::getStoreConfig('payment/oxipayments/automatic_invoice');
+                if ($invoiceAutomatically) {
+                    $this->invoiceOrder($order);
+                }
+
+                // clear shopping cart
+                Mage::getSingleton('checkout/cart')->truncate()->save();
+
+                $this->_redirect('checkout/onepage/success', array('_secure'=> false));
+            } else {
+                $this->_redirect('checkout/onepage/failure', array('_secure'=> false));
             }
+            return;
         }
 
         if($result == "failed") {
