@@ -83,30 +83,30 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
             return;
         }
 
-        if($quote->getData("checkout_method") == "oxipay"){
-            Mage::getSingleton('checkout/cart')->truncate()->save();
-            $this->_redirect('checkout/onepage/success', array('_secure'=> false));
-            return;
-        }
-
-        $quote->setCheckoutMethod('oxipay');
-        $quote->save();
-
         if($result == "completed") {
+            // if already completed by oxipay (e.g. by async-callback)
+            if($quote->getData("checkout_method") == "oxipay"){
+                Mage::getSingleton('checkout/cart')->truncate()->save();
+                $this->_redirect('checkout/onepage/success', array('_secure'=> false));
+                return;
+            }
+            // else
+            $quote->setCheckoutMethod('oxipay');
+            $quote->save();
             $quote->collectTotals();
             $quote->save();
 
             $service = Mage::getModel('sales/service_quote', $quote);
             $service->submitAll(); 
             $order = $service->getOrder();
+            $emailCustomer = Mage::getStoreConfig('payment/oxipayments/email_customer');
 
             if($order) {
-                $order->setState(Mage_Sales_Model_Order::STATE_PROCESSING, true, 'Oxipay processed.');
-                $order->setStatus(Oxipay_Oxipayments_Helper_OrderStatus::STATUS_PROCESSING);
+                $order->setState(Mage_Sales_Model_Order::STATE_PROCESSING, true, 'Oxipay processed.', $emailCustomer);
+                // $order->setStatus(Oxipay_Oxipayments_Helper_OrderStatus::STATUS_PROCESSING);
                 $order->save();
 
                 // send email
-                $emailCustomer = Mage::getStoreConfig('payment/oxipayments/email_customer');
                 if ($emailCustomer) {
                     $order->sendNewOrderEmail();
                 }
@@ -125,9 +125,19 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
                 $this->_redirect('checkout/onepage/failure', array('_secure'=> false));
             }
             return;
+        } 
+        elseif($result == "failed"){
+            // restore cart
+            if ($quote->getId()) {
+                $quote->setIsActive(1);    
+                $quote->setReservedOrderId(null);
+                $quote->save();
+                $this->getCheckoutSession()->replaceQuote($quote);
+            }
+            $this->_redirect('checkout/onepage/failure', array('_secure'=> false));
+            return;
         }
-
-        if($result == "failed") {
+        else {
             $this->_redirect('checkout/onepage/failure', array('_secure'=> false));
             return;
         }
@@ -397,6 +407,7 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
         }
         return $this;
     }
+    
 
     /**
      * Prepare array with information about used product qty and product stock item
