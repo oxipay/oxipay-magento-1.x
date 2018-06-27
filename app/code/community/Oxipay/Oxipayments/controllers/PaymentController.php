@@ -117,7 +117,8 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
             return;
         }
 
-        $fp = fopen(dirname(__FILE__)."/oxipay.lock", "r");
+        $lock = sys_get_temp_dir() . '/oxipay-' . $order->getId() . '.lock';
+        $fp = fopen($lock, "w");
         if (!$fp) {
             Mage::log("Failed to open the oxipay.lock file", Zend_Log::ERR, self::LOG_FILE);
             $this->_redirect('checkout/onepage/error', array('_secure'=> false));
@@ -178,6 +179,7 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
         }
 
         fclose($fp);
+        unlink($lock);
     }
 
     private function statusExists($orderStatus) {
