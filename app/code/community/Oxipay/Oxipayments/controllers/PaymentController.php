@@ -87,6 +87,10 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
             // if already completed by oxipay (e.g. by async-callback)
             if($quote->getData("checkout_method") == "oxipay"){
                 Mage::getSingleton('checkout/cart')->truncate()->save();
+                // set last order id
+                if($quote->getOrigOrderId()){
+                    Mage::getSingleton('checkout/session')->setLastOrderId($quote->getOrigOrderId());
+                }                
                 $this->_redirect('checkout/onepage/success', array('_secure'=> false));
                 return;
             }
@@ -94,11 +98,13 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
             $quote->setCheckoutMethod('oxipay');
             $quote->save();
             $quote->collectTotals();
-            $quote->save();
 
             $service = Mage::getModel('sales/service_quote', $quote);
             $service->submitAll(); 
             $order = $service->getOrder();
+            $quote->setOrigOrderId($order->getId());
+            $quote->save();
+
             $emailCustomer = Mage::getStoreConfig('payment/oxipayments/email_customer');
 
             if($order) {
@@ -119,6 +125,9 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
 
                 // clear shopping cart
                 Mage::getSingleton('checkout/cart')->truncate()->save();
+
+                // set last order id
+                Mage::getSingleton('checkout/session')->setLastOrderId($order->getId());
 
                 $this->_redirect('checkout/onepage/success', array('_secure'=> false));
             } else {
