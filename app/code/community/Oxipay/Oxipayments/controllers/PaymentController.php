@@ -83,15 +83,18 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
             return;
         }
 
+        $isFromAsyncCallback=(strtoupper($this->getRequest()->getMethod()=="POST"))? true:false;
+        $orderIncrementId = null;
+        
         if($result == "completed") {
             // if already completed by oxipay (e.g. by async-callback)
             if($quote->getData("checkout_method") == "oxipay"){
                 Mage::getSingleton('checkout/cart')->truncate()->save();
-                // set last order id
-                if($quote->getOrigOrderId()){
-                    Mage::getSingleton('checkout/session')->setLastOrderId($quote->getOrigOrderId());
-                }                
-                $this->_redirect('checkout/onepage/success', array('_secure'=> false));
+                $orderIncrementId = $quote->getData("reserved_order_id");
+                $order = Mage::getModel('sales/order')->loadByIncrementId($orderIncrementId);
+                // set last order id for success page to display order number
+                Mage::getSingleton('checkout/session')->setLastOrderId($order->getId());
+                $this->sendResponse($isFromAsyncCallback, $result, $orderIncrementId);
                 return;
             }
             // else
@@ -102,8 +105,7 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
             $service = Mage::getModel('sales/service_quote', $quote);
             $service->submitAll(); 
             $order = $service->getOrder();
-            $quote->setOrigOrderId($order->getId());
-            $quote->save();
+            $orderIncrementId = $order->getIncrementId();
 
             $emailCustomer = Mage::getStoreConfig('payment/oxipayments/email_customer');
 
@@ -126,14 +128,12 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
                 // clear shopping cart
                 Mage::getSingleton('checkout/cart')->truncate()->save();
 
-                // set last order id
+                // set last order id for success page to display order number
                 Mage::getSingleton('checkout/session')->setLastOrderId($order->getId());
-
-                $this->_redirect('checkout/onepage/success', array('_secure'=> false));
-            } else {
-                $this->_redirect('checkout/onepage/failure', array('_secure'=> false));
+                
+                $this->sendResponse($isFromAsyncCallback, $result, $orderIncrementId);
+                return;
             }
-            return;
         } 
         elseif($result == "failed"){
             // restore cart
@@ -143,13 +143,9 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
                 $quote->save();
                 $this->getCheckoutSession()->replaceQuote($quote);
             }
-            $this->_redirect('checkout/onepage/failure', array('_secure'=> false));
-            return;
         }
-        else {
-            $this->_redirect('checkout/onepage/failure', array('_secure'=> false));
-            return;
-        }
+        $this->sendResponse($isFromAsyncCallback, "failed", $orderIncrementId);
+        return;
     }
 
     private function statusExists($orderStatus) {
@@ -168,6 +164,24 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
             Mage::log("Exception searching statuses: ".($e->getMessage()), Zend_Log::ERR, self::LOG_FILE);
         }
         return false;
+    }
+
+    private function sendResponse($isFromAsyncCallback, $result, $orderIncrementId){
+        if($isFromAsyncCallback){
+            // if from POST request (from asynccallback)
+            $jsonData = json_encode(["result"=>$result, "order_id"=> $orderIncrementId]);
+            $this->getResponse()->setHeader('Content-type', 'application/json');
+            $this->getResponse()->setBody($jsonData);
+        } else {
+            // if from GET request (from browser redirect)
+            if($result=="completed"){
+                $this->_redirect('checkout/onepage/success', array('_secure'=> false));
+            }else{
+                $this->_redirect('checkout/onepage/failure', array('_secure'=> false));
+            }
+            
+        }
+        return;
     }
 
     private function invoiceOrder(Mage_Sales_Model_Order $order) {
