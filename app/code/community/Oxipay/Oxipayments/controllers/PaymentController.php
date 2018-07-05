@@ -116,23 +116,33 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
 
         $resource = Mage::getSingleton('core/resource');
         $write = $resource->getConnection('core_write');
+        $table = $resource->getTableName('sales/order');
 
         try {
             $write->beginTransaction();
-            $table = $resource->getTableName('sales/order');
 
-            $state = $write->fetchOne('SELECT state FROM '.$table.' WHERE increment_id = '.$orderId.' FOR UPDATE');
+            $select = $write->select()
+                            ->forUpdate()
+                            ->from(array('t' => $table),
+                                   array('state'))
+                            ->where('increment_id = ?', $orderId);
+
+            $state = $write->fetchOne($select);
             if ($state === Mage_Sales_Model_Order::STATE_PENDING_PAYMENT) {
+                $whereQuery = array('increment_id = ?' => $orderId);
+
                 if ($result == "completed")
-                    $write->query('UPDATE '.$table.' SET state = \''.$orderState.'\' WHERE increment_id = '.$orderId);
-                else if ($result = "failed")
-                    $write->query('UPDATE '.$table.' SET state = \''.Mage_Sales_Model_Order::STATE_CANCELED.'\' WHERE increment_id = '.$orderId);
+                    $dataQuery = array('state' => $orderState);
+                else
+                    $dataQuery = array('state' => Mage_Sales_Model_Order::STATE_CANCELED);
+
+                $write->update($table, $dataQuery, $whereQuery);
             } else {
                 $write->commit();
 
                 if ($result == "completed")
                     $this->_redirect('checkout/onepage/success', array('_secure'=> false));
-                else if ($result = "failed")
+                else
                     $this->_redirect('checkout/onepage/failure', array('_secure'=> false));
 
                 return;
