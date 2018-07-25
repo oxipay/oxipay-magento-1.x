@@ -1,0 +1,127 @@
+<?xml version="1.0"?>
+<config>
+    <sections>
+        <payment>
+            <groups>
+                <ezipayments translate="label" module="ezipayments">
+                    <label>Ezipay Checkout</label>
+                    <sort_order>1</sort_order>
+                    <show_in_default>1</show_in_default>
+                    <show_in_website>1</show_in_website>
+                    <show_in_store>0</show_in_store>
+                    <fields>
+                        <active translate="label">
+                            <label>Enabled</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>adminhtml/system_config_source_yesno</source_model>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <sort_order>0</sort_order>
+                        </active>
+                        <merchant_number translate="label">
+                            <label>Merchant Number</label>
+                            <frontend_type>text</frontend_type>
+                            <validate>required-entry</validate>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <sort_order>1</sort_order>
+                        </merchant_number>
+                        <api_key translate="label">
+                            <label>API Key</label>
+                            <frontend_type>password</frontend_type>
+                            <validate>required-entry</validate>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <sort_order>2</sort_order>
+                        </api_key>
+                        <gateway_url translate="label">
+                            <label>Ezipay Gateway URL</label>
+                            <frontend_type>text</frontend_type>
+                            <validate>required-entry</validate>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <sort_order>3</sort_order>
+                        </gateway_url>
+                        <ezipay_approved_order_status translate="label">
+                            <label>Status for Ezipay Approved Orders</label>
+                            <frontend_type>select</frontend_type>
+                            <validate>required-entry</validate>
+                            <source_model>adminhtml/system_config_source_order_status_processing</source_model>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <sort_order>4</sort_order>
+                            <tooltip>Select ‘Ezipay Processed’ if you want to easily locate all Ezipay transactions in the Orders page.</tooltip>
+                        </ezipay_approved_order_status>
+                        <automatic_invoice translate="label">
+                            <label>Automatic Invoice</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>adminhtml/system_config_source_yesno</source_model>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <sort_order>5</sort_order>
+                        </automatic_invoice>
+                        <email_customer translate="label">
+                            <label>Email Customer</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>adminhtml/system_config_source_yesno</source_model>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <sort_order>6</sort_order>
+                        </email_customer>
+                        <min_order_total>
+                            <label>Minimum Order Total</label>
+                            <frontend_type>text</frontend_type>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <sort_order>7</sort_order>
+                        </min_order_total>
+                        <max_order_total>
+                            <label>Maximum Order Total</label>
+                            <frontend_type>text</frontend_type>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <sort_order>8</sort_order>
+                        </max_order_total>
+                        <specificcountry>
+                          <label>Payment from Specific Countries</label>
+                          <frontend_type>select</frontend_type>
+                          <validate>required-entry</validate>
+    			            <source_model>adminhtml/system_config_source_country</source_model>
+                          <show_in_default>1</show_in_default>
+                          <show_in_website>1</show_in_website>
+                          <show_in_store>0</show_in_store>
+                          <sort_order>9</sort_order>
+                        </specificcountry>
+                        <version translate="label">
+                            <label>Version Number</label>
+                            <frontend_type>text</frontend_type>
+                            <frontend_model>Ezipay_Ezipayments_Block_Adminhtml_Version</frontend_model>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <sort_order>9</sort_order>
+                        </version>
+                        <sort_order translate="label">
+                            <label>Sort Order</label>
+                            <frontend_type>text</frontend_type>
+                            <sort_order>100</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <frontend_class>validate-number</frontend_class>
+                        </sort_order>
+                    </fields>
+                </ezipayments>
+            </groups>
+        </payment>
+    </sections>
+</config>

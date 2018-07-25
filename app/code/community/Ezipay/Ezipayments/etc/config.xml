@@ -1,0 +1,100 @@
+<?xml version="1.0"?>
+<config>
+
+    <!-- Module Metadata -->
+    <modules>
+        <Ezipay_Ezipayments>
+            <version>ezipay_plugin_version_placeholder</version>
+        </Ezipay_Ezipayments>
+    </modules>
+    <!-- End Module Metadata -->
+
+    <!-- Dependency Injection Configuration -->
+    <global>
+        <!-- <module root>/Helper/Data.php -->
+        <helpers>
+            <ezipayments>
+                <class>Ezipay_Ezipayments_Helper</class>
+            </ezipayments>
+        </helpers>
+
+        <!-- Partial View Controllers -->
+        <blocks>
+            <ezipayments>
+                <!-- <module root>/[Form|Info]/Ezipayments.php -->
+                <class>Ezipay_Ezipayments_Block</class>
+            </ezipayments>
+        </blocks>
+        <models>
+            <!-- <module root/Model/Paymentmethod.php -->
+            <ezipayments>
+                <class>Ezipay_Ezipayments_Model</class>
+            </ezipayments>
+        </models>
+        <resources>
+            <!-- <module root/sql/ezipayments_setup/install-<version number>.php -->
+            <ezipayments_setup>
+                <setup>
+                    <module>Ezipay_Ezipayments</module>
+                    <class>Mage_Core_Model_Resource_Setup</class>
+                </setup>
+            </ezipayments_setup>
+        </resources>
+    </global>
+    <!-- End Dependency Injection Configuration -->
+
+    <!-- Payment Method Default Configuration Values -->
+    <default>
+        <payment>
+            <ezipayments>
+                <active>0</active>
+                <model>ezipayments/paymentmethod</model>
+                <ezipay_approved_order_status>ezipay_processed</ezipay_approved_order_status>
+                <title>Ezipay</title>
+                <allowspecific>0</allowspecific>
+                <payment_action>sale</payment_action>
+                <gateway_url></gateway_url>
+                <specificcountry>AU,NZ</specificcountry>
+                <merchant_number></merchant_number>
+                <api_key></api_key>
+                <automatic_invoice>0</automatic_invoice> <!-- 0:No -->
+                <email_customer>1</email_customer>
+            </ezipayments>
+        </payment>
+        <ezipay>
+            <cron>
+                <pending_payment_timeout>5400</pending_payment_timeout> <!-- Not used yet -->
+            </cron>
+        </ezipay>
+    </default>
+    <!-- End Payment Method Default Configuration Values -->
+
+    <!-- Crontab configuration -->
+    <crontab>
+        <jobs>
+            <!-- <Ezipay_cancelEzipayPendingOrders>
+                <schedule>
+                    <cron_expr>*/2 * * * *</cron_expr>
+                </schedule>
+                <run>
+                    <model>ezipayments/observer::cancelEzipayPendingOrders</model>
+                </run>
+            </Ezipay_cancelEzipayPendingOrders> -->
+        </jobs>
+    </crontab>
+    <!-- End Crontab configuration -->
+
+    <!-- Routing Configuration -->
+    <frontend>
+        <routers>
+            <ezipayments>
+                <use>standard</use>
+                <args>
+                    <module>Ezipay_Ezipayments</module>
+                    <frontName>ezipayments</frontName>
+                </args>
+            </ezipayments>
+        </routers>
+    </frontend>
+    <!-- End Routing Configuration -->
+</config>
