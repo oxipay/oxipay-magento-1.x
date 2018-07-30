@@ -94,10 +94,6 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
 
         $order = $this->getOrderById($orderId);
 
-        if (!$this->statusExists($orderStatus)) {
-            $orderStatus = $order->getConfig()->getStateDefaultStatus($orderState);
-        }
-
         if(!$order) {
             Mage::log("Oxipay returned an id for an order that could not be retrieved: $orderId", Zend_Log::ERR, self::LOG_FILE);
             $this->_redirect('checkout/onepage/error', array('_secure'=> false));
@@ -155,13 +151,14 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
 
         $order = $this->getOrderById($orderId);
 
-        //magento likes to have you explicitly hydrate the object, required such that the save on line below doesn't fail
-        $unusedPaymentObject = $order->getPayment();
-
         if ($result == "completed") {
             $orderState = Mage_Sales_Model_Order::STATE_PROCESSING;
             $orderStatus = Mage::getStoreConfig('payment/oxipayments/oxipay_approved_order_status');
             $emailCustomer = Mage::getStoreConfig('payment/oxipayments/email_customer');
+            if (!$this->statusExists($orderStatus)) {
+                $orderStatus = $order->getConfig()->getStateDefaultStatus($orderState);
+            }
+
             $order->setState($orderState, $orderStatus ? $orderStatus : true, $this->__("Oxipay authorisation success. Transaction #$transactionId"), $emailCustomer);
             $order->save();
 
