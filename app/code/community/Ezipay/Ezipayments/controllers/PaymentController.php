@@ -31,7 +31,7 @@ class Ezipay_Ezipayments_PaymentController extends Mage_Core_Controller_Front_Ac
                 Mage::logException($ex);
                 Mage::log('An exception was encountered in ezipayments/paymentcontroller: ' . $ex->getMessage(), Zend_Log::ERR, self::LOG_FILE);
                 Mage::log($ex->getTraceAsString(), Zend_Log::ERR, self::LOG_FILE);
-                $this->getCheckoutSession()->addError($this->__('Unable to start Ezipay Checkout.'));
+                $this->getCheckoutSession()->addError($this->__('Unable to start Certegy Ezi-Pay Checkout.'));
             }
         } else {
             $this->restoreCart($this->getLastRealOrder());
@@ -87,7 +87,7 @@ class Ezipay_Ezipayments_PaymentController extends Mage_Core_Controller_Front_Ac
         }
 
         if(!$orderId) {
-            Mage::log("Ezipay returned a null order id. This may indicate an issue with the Ezipay payment gateway.", Zend_Log::ERR, self::LOG_FILE);
+            Mage::log("Certegy Ezi-Pay returned a null order id. This may indicate an issue with the Certegy Ezi-Pay payment gateway.", Zend_Log::ERR, self::LOG_FILE);
             $this->_redirect('checkout/onepage/error', array('_secure'=> false));
             return;
         }
@@ -95,7 +95,7 @@ class Ezipay_Ezipayments_PaymentController extends Mage_Core_Controller_Front_Ac
         $order = $this->getOrderById($orderId);
 
         if(!$order) {
-            Mage::log("Ezipay returned an id for an order that could not be retrieved: $orderId", Zend_Log::ERR, self::LOG_FILE);
+            Mage::log("Certegy Ezi-Pay returned an id for an order that could not be retrieved: $orderId", Zend_Log::ERR, self::LOG_FILE);
             $this->_redirect('checkout/onepage/error', array('_secure'=> false));
             return;
         }
@@ -159,7 +159,7 @@ class Ezipay_Ezipayments_PaymentController extends Mage_Core_Controller_Front_Ac
                 $orderStatus = $order->getConfig()->getStateDefaultStatus($orderState);
             }
 
-            $order->setState($orderState, $orderStatus ? $orderStatus : true, $this->__("Ezipay authorisation success. Transaction #$transactionId"), $emailCustomer);
+            $order->setState($orderState, $orderStatus ? $orderStatus : true, $this->__("Certegy Ezi-Pay authorisation success. Transaction #$transactionId"), $emailCustomer);
             $order->save();
 
             if ($emailCustomer) {
@@ -174,7 +174,7 @@ class Ezipay_Ezipayments_PaymentController extends Mage_Core_Controller_Front_Ac
             Mage::getSingleton('checkout/session')->unsQuoteId();
             $this->_redirect('checkout/onepage/success', array('_secure'=> false));
         } else {
-            $order->addStatusHistoryComment($this->__("Order #".($order->getId())." was declined by ezipay. Transaction #$transactionId."));
+            $order->addStatusHistoryComment($this->__("Order #".($order->getId())." was declined by Certegy Ezi-Pay. Transaction #$transactionId."));
             $order
                 ->cancel()
                 ->setStatus(Ezipay_Ezipayments_Helper_OrderStatus::STATUS_DECLINED)
@@ -315,17 +315,17 @@ class Ezipay_Ezipayments_PaymentController extends Mage_Core_Controller_Front_Ac
         $order = $this->getLastRealOrder();
 
         if($order->getTotalDue() < 20) {
-            Mage::getSingleton('checkout/session')->addError("Ezipay doesn't support purchases less than $20.");
+            Mage::getSingleton('checkout/session')->addError("Certegy Ezi-Pay doesn't support purchases less than $20.");
             return false;
         }
 
         if($order->getBillingAddress()->getCountry() != $this->getSpecificCountry() || $order->getOrderCurrencyCode() != $specificCurrency ) {
-            Mage::getSingleton('checkout/session')->addError("Orders from this country are not supported by Ezipay. Please select a different payment option.");
+            Mage::getSingleton('checkout/session')->addError("Orders from this country are not supported by Certegy Ezi-Pay. Please select a different payment option.");
             return false;
         }
 
         if( !$order->isVirtual && $order->getShippingAddress()->getCountry() != $this->getSpecificCountry()) {
-            Mage::getSingleton('checkout/session')->addError("Orders shipped to this country are not supported by Ezipay. Please select a different payment option.");
+            Mage::getSingleton('checkout/session')->addError("Orders shipped to this country are not supported by Certegy Ezi-Pay. Please select a different payment option.");
             return false;
         }
 
