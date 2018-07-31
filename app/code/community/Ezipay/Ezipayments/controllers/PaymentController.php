@@ -92,14 +92,7 @@ class Ezipay_Ezipayments_PaymentController extends Mage_Core_Controller_Front_Ac
             return;
         }
 
-        
         $order = $this->getOrderById($orderId);
-        $orderState = Mage_Sales_Model_Order::STATE_PROCESSING;
-        $orderStatus = Mage::getStoreConfig('payment/ezipayments/ezipay_approved_order_status');
-        $emailCustomer = Mage::getStoreConfig('payment/ezipayments/email_customer');
-        if (!$this->statusExists($orderStatus)) {
-            $orderStatus = $order->getConfig()->getStateDefaultStatus($orderState);
-        }
 
         if(!$order) {
             Mage::log("Ezipay returned an id for an order that could not be retrieved: $orderId", Zend_Log::ERR, self::LOG_FILE);
@@ -122,17 +115,17 @@ class Ezipay_Ezipayments_PaymentController extends Mage_Core_Controller_Front_Ac
             $write->beginTransaction();
 
             $select = $write->select()
-                            ->forUpdate()
-                            ->from(array('t' => $table),
-                                   array('state'))
-                            ->where('increment_id = ?', $orderId);
+                ->forUpdate()
+                ->from(array('t' => $table),
+                    array('state'))
+                ->where('increment_id = ?', $orderId);
 
             $state = $write->fetchOne($select);
             if ($state === Mage_Sales_Model_Order::STATE_PENDING_PAYMENT) {
                 $whereQuery = array('increment_id = ?' => $orderId);
 
                 if ($result == "completed")
-                    $dataQuery = array('state' => $orderState);
+                    $dataQuery = array('state' => Mage_Sales_Model_Order::STATE_PROCESSING);
                 else
                     $dataQuery = array('state' => Mage_Sales_Model_Order::STATE_CANCELED);
 
@@ -158,12 +151,16 @@ class Ezipay_Ezipayments_PaymentController extends Mage_Core_Controller_Front_Ac
 
         $order = $this->getOrderById($orderId);
 
-        //magento likes to have you explicitly hydrate the object, required such that the save on line below doesn't fail
-        $unusedPaymentObject = $order->getPayment();
-
         if ($result == "completed") {
+            $orderState = Mage_Sales_Model_Order::STATE_PROCESSING;
+            $orderStatus = Mage::getStoreConfig('payment/ezipayments/ezipay_approved_order_status');
+            $emailCustomer = Mage::getStoreConfig('payment/ezipayments/email_customer');
+            if (!$this->statusExists($orderStatus)) {
+                $orderStatus = $order->getConfig()->getStateDefaultStatus($orderState);
+            }
+
             $order->setState($orderState, $orderStatus ? $orderStatus : true, $this->__("Ezipay authorisation success. Transaction #$transactionId"), $emailCustomer);
-            $order->getResource()->saveAttribute($order, 'state');
+            $order->save();
 
             if ($emailCustomer) {
                 $order->sendNewOrderEmail();
@@ -182,12 +179,12 @@ class Ezipay_Ezipayments_PaymentController extends Mage_Core_Controller_Front_Ac
                 ->cancel()
                 ->setStatus(Ezipay_Ezipayments_Helper_OrderStatus::STATUS_DECLINED)
                 ->addStatusHistoryComment($this->__("Order #".($order->getId())." was canceled by customer."));
-            
+
             $order->save();
             // $this->restoreCart($order, true);
             $this->restoreCart($order);
 
-            //Mage::getSingleton('checkout/session')->unsQuoteId();
+            Mage::getSingleton('checkout/session')->unsQuoteId();
             $this->_redirect('checkout/onepage/failure', array('_secure'=> false));
         }
     }
@@ -354,7 +351,7 @@ class Ezipay_Ezipayments_PaymentController extends Mage_Core_Controller_Front_Ac
         "<html>
             <body>
             <form id='form' action='$checkoutUrl' method='post'>";
-            foreach ($payload as $key => $value) {
+        foreach ($payload as $key => $value) {
                 echo "<input type='hidden' id='$key' name='$key' value='".htmlspecialchars($value, ENT_QUOTES)."'/>";
             }
         echo
