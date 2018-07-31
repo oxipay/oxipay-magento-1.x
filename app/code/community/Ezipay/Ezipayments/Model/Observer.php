@@ -41,7 +41,7 @@ class Ezipay_Ezipayments_Model_Observer
 
             $orderModel->cancel();
 
-            $history = $orderModel->addStatusHistoryComment('Ezipay payment was not received for this order after 90 minutes');
+            $history = $orderModel->addStatusHistoryComment('Certegy Ezi-Pay payment was not received for this order after 90 minutes');
             $history->save();
 
             $orderModel->save();

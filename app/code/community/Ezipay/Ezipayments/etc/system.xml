@@ -4,7 +4,7 @@
         <payment>
             <groups>
                 <ezipayments translate="label" module="ezipayments">
-                    <label>Ezipay Checkout</label>
+                    <label>Certegy Ezi-Pay Checkout</label>
                     <sort_order>1</sort_order>
                     <show_in_default>1</show_in_default>
                     <show_in_website>1</show_in_website>
@@ -38,7 +38,7 @@
                             <sort_order>2</sort_order>
                         </api_key>
                         <gateway_url translate="label">
-                            <label>Ezipay Gateway URL</label>
+                            <label>Certegy Ezi-Pay Gateway URL</label>
                             <frontend_type>text</frontend_type>
                             <validate>required-entry</validate>
                             <show_in_default>1</show_in_default>
@@ -47,7 +47,7 @@
                             <sort_order>3</sort_order>
                         </gateway_url>
                         <ezipay_approved_order_status translate="label">
-                            <label>Status for Ezipay Approved Orders</label>
+                            <label>Status for Certegy Ezi-Pay Approved Orders</label>
                             <frontend_type>select</frontend_type>
                             <validate>required-entry</validate>
                             <source_model>adminhtml/system_config_source_order_status_processing</source_model>

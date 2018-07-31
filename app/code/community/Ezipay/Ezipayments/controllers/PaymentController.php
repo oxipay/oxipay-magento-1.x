@@ -22,7 +22,7 @@ class Ezipay_Ezipayments_PaymentController extends Mage_Core_Controller_Front_Ac
                 $payload = $this->getPayload($order);
 
                 //Mage_Sales_Model_Order::setState($state, $status=false, $comment='', $isCustomerNotified=false)
-                $order->setState(Mage_Sales_Model_Order::STATE_PENDING_PAYMENT, true, 'Ezipay authorisation underway.');
+                $order->setState(Mage_Sales_Model_Order::STATE_PENDING_PAYMENT, true, 'Certegy Ezi-Pay authorisation underway.');
                 $order->setStatus(Ezipay_Ezipayments_Helper_OrderStatus::STATUS_PENDING_PAYMENT);
                 $order->save();
 
