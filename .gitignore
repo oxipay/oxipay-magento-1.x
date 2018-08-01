@@ -23,6 +23,16 @@ app/design/frontend/base/default/*
 app/design/frontend/base/default/template/*
 !app/design/frontend/base/default/template/ezipayments
 
+!app/design/adminhtml/
+app/design/adminhtml/*
+!app/design/adminhtml/base
+app/design/adminhtml/base/*
+!app/design/adminhtml/base/default
+app/design/adminhtml/base/default/*
+!app/design/adminhtml/base/default/template
+app/design/adminhtml/base/default/template/*
+!app/design/adminhtml/base/default/template/ezipayments
+
 # etc
 !app/etc
 app/etc/*
