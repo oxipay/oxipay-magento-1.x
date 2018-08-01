@@ -50,7 +50,7 @@
                 <active>0</active>
                 <model>ezipayments/paymentmethod</model>
                 <ezipay_approved_order_status>ezipay_processed</ezipay_approved_order_status>
-                <title>Ezipay</title>
+                <title>Certegy Ezi-Pay</title>
                 <allowspecific>0</allowspecific>
                 <payment_action>sale</payment_action>
                 <gateway_url></gateway_url>
