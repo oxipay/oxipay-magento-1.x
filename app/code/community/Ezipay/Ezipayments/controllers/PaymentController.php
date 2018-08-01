@@ -308,9 +308,6 @@ class Ezipay_Ezipayments_PaymentController extends Mage_Core_Controller_Front_Ac
         if ($this->getSpecificCountry() == self::EZIPAY_AU_COUNTRY_CODE) {
             $specificCurrency = self::EZIPAY_AU_CURRENCY_CODE;
         }
-        else if ($this->getSpecificCountry() == self::EZIPAY_NZ_COUNTRY_CODE) {
-            $specificCurrency = self::EZIPAY_NZ_CURRENCY_CODE;
-        }
 
         $order = $this->getLastRealOrder();
 
