@@ -150,6 +150,7 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
         }
 
         $order = $this->getOrderById($orderId);
+        $isFromAsyncCallback=(strtoupper($this->getRequest()->getMethod()=="POST"))? true:false;
 
         if ($result == "completed") {
             $orderState = Mage_Sales_Model_Order::STATE_PROCESSING;
@@ -170,9 +171,6 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
             if ($invoiceAutomatically) {
                 $this->invoiceOrder($order);
             }
-
-            Mage::getSingleton('checkout/session')->unsQuoteId();
-            $this->_redirect('checkout/onepage/success', array('_secure'=> false));
         } else {
             $order->addStatusHistoryComment($this->__("Order #".($order->getId())." was declined by oxipay. Transaction #$transactionId."));
             $order
@@ -183,10 +181,10 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
             $order->save();
             // $this->restoreCart($order, true);
             $this->restoreCart($order);
-
-            Mage::getSingleton('checkout/session')->unsQuoteId();
-            $this->_redirect('checkout/onepage/failure', array('_secure'=> false));
         }
+        Mage::getSingleton('checkout/session')->unsQuoteId();
+        $this->sendResponse($isFromAsyncCallback, $result, $orderId);
+        return;
     }
 
     private function statusExists($orderStatus) {
@@ -205,6 +203,24 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
             Mage::log("Exception searching statuses: ".($e->getMessage()), Zend_Log::ERR, self::LOG_FILE);
         }
         return false;
+    }
+
+    private function sendResponse($isFromAsyncCallback, $result, $orderId){
+        if($isFromAsyncCallback){
+            // if from POST request (from asynccallback)
+            $jsonData = json_encode(["result"=>$result, "order_id"=> $orderId]);
+            $this->getResponse()->setHeader('Content-type', 'application/json');
+            $this->getResponse()->setBody($jsonData);
+        } else {
+            // if from GET request (from browser redirect)
+            if($result=="completed"){
+                $this->_redirect('checkout/onepage/success', array('_secure'=> false));
+            }else{
+                $this->_redirect('checkout/onepage/failure', array('_secure'=> false));
+            }
+
+        }
+        return;
     }
 
     private function invoiceOrder(Mage_Sales_Model_Order $order) {
