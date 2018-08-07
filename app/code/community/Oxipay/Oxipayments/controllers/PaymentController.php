@@ -103,8 +103,6 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
         // ensure that we have a Mage_Sales_Model_Order
         if (get_class($order) !== 'Mage_Sales_Model_Order') {
             Mage::log("The instance of order returned is an unexpected type.", Zend_Log::ERR, self::LOG_FILE);
-            $this->_redirect('checkout/onepage/error', array('_secure'=> false));
-            return;
         }
 
         $resource = Mage::getSingleton('core/resource');
