@@ -21,7 +21,6 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
                 $order = $this->getLastRealOrder();
                 $payload = $this->getPayload($order);
 
-                //Mage_Sales_Model_Order::setState($state, $status=false, $comment='', $isCustomerNotified=false)
                 $order->setState(Mage_Sales_Model_Order::STATE_PENDING_PAYMENT, true, 'Oxipay authorisation underway.');
                 $order->setStatus(Oxipay_Oxipayments_Helper_OrderStatus::STATUS_PENDING_PAYMENT);
                 $order->save();
@@ -36,6 +35,10 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
         } else {
             $this->restoreCart($this->getLastRealOrder());
             $this->_redirect('checkout/cart');
+            
+            // delete order
+            $order = $this->getLastRealOrder();
+            Mage::getResourceSingleton('sales/order')->delete($order);
         }
     }
 
