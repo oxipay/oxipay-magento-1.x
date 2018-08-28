@@ -42,8 +42,9 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
             $this->restoreCart($this->getLastRealOrder());
             $this->_redirect('checkout/cart');
             
-            // delete order
+            // cancel order (restore stock) and delete order
             $order = $this->getLastRealOrder();
+            $this -> cancelOrder($order);
             Mage::getResourceSingleton('sales/order')->delete($order);
         }
     }
