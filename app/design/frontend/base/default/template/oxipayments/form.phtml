@@ -1,4 +1,8 @@
-<div>
-    <img src="<?php echo Mage::getDesign()->getSkinUrl("images/Oxipay/oxipay-logo.png") ?>" style="width:auto;height:35px;" />
-    <p><strong>Oxipay the smarter way to pay.</strong><br>Shop today, pay over time. 4 easy fortnightly payments.</p>
-</div>
+<ul class="form-list" id="payment_form_<?php echo $this->getMethodCode() ?>">
+    <li class="form-alt">
+        <p>
+            <img src="<?php echo Mage::getDesign()->getSkinUrl("images/Oxipay/oxipay-logo.png") ?>" style="width:auto;height:20px;margin-right:6px;margin-bottom:-6px;display:inline;" />
+            <strong> the smarter way to pay.</strong><br>Shop today, pay over time. 4 easy fortnightly payments.
+        </p>
+    </li>
+</ul>
