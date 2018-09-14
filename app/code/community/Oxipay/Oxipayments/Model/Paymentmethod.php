@@ -13,7 +13,9 @@ class Oxipay_Oxipayments_Model_Paymentmethod extends Mage_Payment_Model_Method_A
     protected $_canUseInternal = false;
     protected $_canUseForMultishipping = false;
     protected $_canUseCheckout = true;
-
+    protected $_canRefund = true;
+    protected $_canRefundInvoicePartial = true;
+    protected $_canCapturePartial = true;
 
     /**
      * Override redirect location of magento's payment method subsystem

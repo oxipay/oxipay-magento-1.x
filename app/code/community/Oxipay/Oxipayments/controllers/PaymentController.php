@@ -163,6 +163,10 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
             }
 
             $order->setState($orderState, $orderStatus ? $orderStatus : true, $this->__("Oxipay authorisation success. Transaction #$transactionId"), $emailCustomer);
+            $payment = $order->getPayment();
+            $payment->setTransactionId($transactionId);
+            $payment->save();
+
             $order->save();
 
             if ($emailCustomer) {
