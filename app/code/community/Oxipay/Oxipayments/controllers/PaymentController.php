@@ -244,6 +244,7 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
         }
 
         $invoice->setRequestedCaptureCase(Mage_Sales_Model_Order_Invoice::CAPTURE_ONLINE);
+        $invoice->setTransactionId($order->getPayment()->getTransactionId());
         $invoice->register();
         $transactionSave = Mage::getModel('core/resource_transaction')
         ->addObject($invoice)
