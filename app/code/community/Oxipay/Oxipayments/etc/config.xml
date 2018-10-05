@@ -31,17 +31,6 @@
                 <class>Oxipay_Oxipayments_Model</class>
             </oxipayments>
         </models>
-        <events>
-            <sales_order_creditmemo_refund>
-                <observers>
-                    <refundint>
-                        <type>singleton</type>
-                        <class>Oxipay_Oxipayments_Model_Observer</class>>
-                        <method>do_refunding</method>
-                    </refundint>
-                </observers>
-            </sales_order_creditmemo_refund>
-        </events>
         <resources>
             <!-- <module root/sql/oxipayments_setup/install-<version number>.php -->
             <oxipayments_setup>
