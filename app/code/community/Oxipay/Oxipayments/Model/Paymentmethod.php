@@ -43,7 +43,7 @@ class Oxipay_Oxipayments_Model_Paymentmethod extends Mage_Payment_Model_Method_A
             "x_merchant_number" => $merchant_number,
             "x_purchase_number" => $transaction_id,
             "x_amount" => $refund_amount,
-            "x_reason" => "Test refund"
+            "x_reason" => "Refund"
         );
 
         $refund_signature = Oxipay_Oxipayments_Helper_Crypto::generateSignature($refund_details, $apiKey);
@@ -60,24 +60,20 @@ class Oxipay_Oxipayments_Model_Paymentmethod extends Mage_Payment_Model_Method_A
             )
         ));
 
+        ini_set("allow_url_fopen", 1);
         $return_message = file_get_contents($url, null, $context);
         $parsed = ($this->parseHeaders($http_response_header));
 
         if ($parsed['response_code'] == '204') {
-            $result = 'success';
+            return $this;
         } elseif ($parsed['response_code'] == '401') {
-            $result = "Failed Signature Check";
+	        Mage::logException(new Exception(sprintf('Oxipay refunding error: Failed Signature Check')));
+	        Mage::throwException('Oxipay refunding error: Failed Signature Check when communicating with the Oxipay gateway.');
         } elseif ($parsed['response_code'] == '400') {
-            $result = $return_message;
+	        Mage::logException(new Exception(sprintf('Oxipay refunding error: Gateway returned message')));
+	        Mage::throwException('Oxipay refunding failed with error message returned from the Oxipay gateway. Possible reasons: "API Key Not found", "Refund Failed", "Invalid Request"');
         }
-//        return 'Failed Signature Check';
-        return $this;
-
-//        $event = $observer->getEvent();
-//        $creditmemo_object = $observer["creditmemo"];
-//        $refund_value = $creditmemo_object->getSubtotal();
-//        Mage::log('[oxipay][cron][cancelOxipayPendingOrders]Start', Zend_Log::DEBUG, self::LOG_FILE);
-    }
+}
 
     function parseHeaders($headers)
     {
