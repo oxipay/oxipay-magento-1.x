@@ -29,7 +29,6 @@ class Oxipay_Oxipayments_Model_Paymentmethod extends Mage_Payment_Model_Method_A
     public function refund(Varien_Object $payment, $amount)
     {
         $url = 'https://portalssandbox.oxipay.com.au/api/ExternalRefund/processrefund';
-        $result = 'unknown';
 
         $merchant_number = Mage::getStoreConfig('payment/oxipayments/merchant_number');
         $apiKey = Mage::getStoreConfig('payment/oxipayments/api_key');
@@ -51,29 +50,46 @@ class Oxipay_Oxipayments_Model_Paymentmethod extends Mage_Payment_Model_Method_A
 
         $json = json_encode($refund_details);
 
-        $context = stream_context_create(array(
-            'http' => array(
-                'method' => 'POST',
-                'header' =>
-                    'Content-Type: application/json',
-                'content' => $json
-            )
-        ));
+        // Do refunding POST request using curl
+        $curl = curl_init($url);
+	    curl_setopt($curl, CURLOPT_CUSTOMREQUEST, "POST");
+	    curl_setopt($curl, CURLOPT_POSTFIELDS, $json);
+	    curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
+	    curl_setopt($curl, CURLOPT_HEADER, 1);
+        curl_setopt($curl, CURLOPT_HTTPHEADER, array("Content-type: application/json"));
+        $response = curl_exec($curl);
 
-        ini_set("allow_url_fopen", 1);
-        $return_message = file_get_contents($url, null, $context);
-        $parsed = ($this->parseHeaders($http_response_header));
+        // split and parse header and body
+	    $header_size = curl_getinfo($curl, CURLINFO_HEADER_SIZE);
+	    $header_string = substr($response, 0, $header_size);
+	    $body = substr($response, $header_size);
+	    $header_rows = explode(PHP_EOL, $header_string);
+	    $header_rows = array_filter($header_rows, trim);
+	    $parsed_header = ($this->parseHeaders($header_rows));
 
-        if ($parsed['response_code'] == '204') {
+        curl_close($curl);
+
+        if ($parsed_header['response_code'] == '204') {
             return $this;
-        } elseif ($parsed['response_code'] == '401') {
-	        Mage::logException(new Exception(sprintf('Oxipay refunding error: Failed Signature Check')));
-	        Mage::throwException('Oxipay refunding error: Failed Signature Check when communicating with the Oxipay gateway.');
-        } elseif ($parsed['response_code'] == '400') {
-	        Mage::logException(new Exception(sprintf('Oxipay refunding error: Gateway returned message')));
-	        Mage::throwException('Oxipay refunding failed with error message returned from the Oxipay gateway. Possible reasons: "API Key Not found", "Refund Failed", "Invalid Request"');
+        } elseif ($parsed_header['response_code'] == '401') {
+	        $error_message = 'Oxipay refunding error: Failed Signature Check when communicating with the Oxipay gateway.';
+        	Mage::logException(new Exception($error_message));
+	        Mage::throwException($error_message);
+        } elseif ($parsed_header['response_code'] == '400') {
+	        $return_message = json_decode($body, true)['Message'];
+	        $return_message_explain = '';
+	        if ($return_message == "MERR0001") {
+	        	$return_message_explain = ' (API Key Not found)';
+	        } elseif ($return_message == "MERR0003") {
+		        $return_message_explain = ' (Refund Failed)';
+	        } elseif ($return_message == "MERR0004") {
+		        $return_message_explain = ' (Invalid Request)';
+	        }
+	        $error_message = 'Oxipay refunding error with returned message from gateway: '.$return_message.$return_message_explain;
+	        Mage::logException(new Exception($error_message));
+	        Mage::throwException($error_message);
         }
-}
+	}
 
     function parseHeaders($headers)
     {
