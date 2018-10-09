@@ -28,7 +28,7 @@ class Oxipay_Oxipayments_Model_Paymentmethod extends Mage_Payment_Model_Method_A
 
     public function refund(Varien_Object $payment, $amount)
     {
-        $url = 'https://portalssandbox.oxipay.com.au/api/ExternalRefund/processrefund';
+        $url = Oxipay_Oxipayments_Helper_Data::getRefundUrl();
 
         $merchant_number = Mage::getStoreConfig('payment/oxipayments/merchant_number');
         $apiKey = Mage::getStoreConfig('payment/oxipayments/api_key');
@@ -86,6 +86,10 @@ class Oxipay_Oxipayments_Model_Paymentmethod extends Mage_Payment_Model_Method_A
 		        $return_message_explain = ' (Invalid Request)';
 	        }
 	        $error_message = 'Oxipay refunding error with returned message from gateway: '.$return_message.$return_message_explain;
+	        Mage::logException(new Exception($error_message));
+	        Mage::throwException($error_message);
+        } else {
+        	$error_message = "Oxipay refunding failed with unknown error.";
 	        Mage::logException(new Exception($error_message));
 	        Mage::throwException($error_message);
         }
