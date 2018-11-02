@@ -64,7 +64,7 @@ class Oxipay_Oxipayments_Model_Paymentmethod extends Mage_Payment_Model_Method_A
 	    $header_string = substr($response, 0, $header_size);
 	    $body = substr($response, $header_size);
 	    $header_rows = explode(PHP_EOL, $header_string);
-	    $header_rows = array_filter($header_rows, trim);
+        $header_rows = array_map('trim', $header_rows);
 	    $parsed_header = ($this->parseHeaders($header_rows));
 
         curl_close($curl);
