@@ -9,14 +9,13 @@ $installer = $this;
 
 $installer->startSetup();
 
-    // add default Oxipay Status "Oxipay Processed" for STATE_PROCESSING state    
+// add default Oxipay Status "Oxipay Processed" for STATE_PROCESSING state
 $installer->run("INSERT INTO `{$this->getTable('sales_order_status')}` (`status`, `label`) VALUES ('pending_oxipay', 'Pending Oxipay');");
 
 // update the existing status
 $installer->run("UPDATE `{$this->getTable('sales_order_status')}` set `label`= 'Oxipay Processed' where `status`='oxipay_processed'");
 
-
-// @todo Oxipay Cancelled
+// Cancelled Oxipay
 $installer->run("INSERT INTO `{$this->getTable('sales_order_status')}` (`status`, `label`) VALUES ('cancelled_oxipay', 'Cancelled Oxipay');");
 
 // Declined Oxipay
