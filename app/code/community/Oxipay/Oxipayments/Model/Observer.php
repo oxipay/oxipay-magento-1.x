@@ -46,7 +46,5 @@ class Oxipay_Oxipayments_Model_Observer
 
             $orderModel->save();
         }
-
     }
-
 }
