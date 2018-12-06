@@ -58,13 +58,14 @@
                             <tooltip>Select ‘Oxipay Processed’ if you want to easily locate all Oxipay transactions in the Orders page.</tooltip>
                         </oxipay_approved_order_status>
                         <automatic_invoice translate="label">
-                            <label>Automatic Invoice</label>
+                            <label>Automatic Invoice (for refunding, must be enabled)</label>
                             <frontend_type>select</frontend_type>
                             <source_model>adminhtml/system_config_source_yesno</source_model>
                             <show_in_default>1</show_in_default>
                             <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
                             <sort_order>5</sort_order>
+                            <tooltip>If disabled, online refunding in Magento with Oxipay will not be possible.</tooltip>
                         </automatic_invoice>
                         <email_customer translate="label">
                             <label>Email Customer</label>
