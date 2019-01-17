@@ -329,17 +329,27 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
     private function validateQuote()
     {
         $specificCurrency = null;
+        $order = $this->getLastRealOrder();
+        $total = $order->getTotalDue();
 
         if ($this->getSpecificCountry() == self::OXIPAY_AU_COUNTRY_CODE) {
+            if ($total > 2100) {
+                Mage::getSingleton('checkout/session')->addError("Oxipay doesn't support purchases over $2100.");
+                return false;
+            }
+
             $specificCurrency = self::OXIPAY_AU_CURRENCY_CODE;
         }
         else if ($this->getSpecificCountry() == self::OXIPAY_NZ_COUNTRY_CODE) {
+            if ($total > 1500) {
+                Mage::getSingleton('checkout/session')->addError("Oxipay doesn't support purchases over $1500.");
+                return false;
+            }
+
             $specificCurrency = self::OXIPAY_NZ_CURRENCY_CODE;
         }
 
-        $order = $this->getLastRealOrder();
-
-        if($order->getTotalDue() < 20) {
+        if($total < 20) {
             Mage::getSingleton('checkout/session')->addError("Oxipay doesn't support purchases less than $20.");
             return false;
         }
