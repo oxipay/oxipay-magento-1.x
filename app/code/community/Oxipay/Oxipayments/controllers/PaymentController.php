@@ -267,12 +267,12 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
         $shippingAddress = $order->getShippingAddress();
         $billingAddress = $order->getBillingAddress();
 
-        $billingAddressParts = explode(PHP_EOL, $billingAddress->getData('street'));
+        $billingAddressParts = preg_split('/\r\n|\r|\n/', $billingAddress->getData('street'));
         $billingAddress0 = $billingAddressParts[0];
         $billingAddress1 = (count($billingAddressParts)>1)? $billingAddressParts[1]:'';
 
         if (!empty($shippingAddress)){
-            $shippingAddressParts = explode(PHP_EOL, $shippingAddress->getData('street'));
+            $shippingAddressParts = preg_split('/\r\n|\r|\n/', $shippingAddress->getData('street'));
             $shippingAddress0 = $shippingAddressParts[0];
             $shippingAddress1 = (count($shippingAddressParts)>1)? $shippingAddressParts[1]:'';
             $shippingAddress_city = $shippingAddress->getData('city');
