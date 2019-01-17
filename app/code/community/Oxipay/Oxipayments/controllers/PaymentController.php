@@ -267,12 +267,12 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
         $shippingAddress = $order->getShippingAddress();
         $billingAddress = $order->getBillingAddress();
 
-        $billingAddressParts = explode(PHP_EOL, $billingAddress->getData('street'));
+        $billingAddressParts = preg_split('/\r\n|\r|\n/', $billingAddress->getData('street'));
         $billingAddress0 = $billingAddressParts[0];
         $billingAddress1 = (count($billingAddressParts)>1)? $billingAddressParts[1]:'';
 
         if (!empty($shippingAddress)){
-            $shippingAddressParts = explode(PHP_EOL, $shippingAddress->getData('street'));
+            $shippingAddressParts = preg_split('/\r\n|\r|\n/', $shippingAddress->getData('street'));
             $shippingAddress0 = $shippingAddressParts[0];
             $shippingAddress1 = (count($shippingAddressParts)>1)? $shippingAddressParts[1]:'';
             $shippingAddress_city = $shippingAddress->getData('city');
@@ -329,17 +329,27 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
     private function validateQuote()
     {
         $specificCurrency = null;
+        $order = $this->getLastRealOrder();
+        $total = $order->getTotalDue();
 
         if ($this->getSpecificCountry() == self::OXIPAY_AU_COUNTRY_CODE) {
+            if ($total > 2100) {
+                Mage::getSingleton('checkout/session')->addError("Oxipay doesn't support purchases over $2100.");
+                return false;
+            }
+
             $specificCurrency = self::OXIPAY_AU_CURRENCY_CODE;
         }
         else if ($this->getSpecificCountry() == self::OXIPAY_NZ_COUNTRY_CODE) {
+            if ($total > 1500) {
+                Mage::getSingleton('checkout/session')->addError("Oxipay doesn't support purchases over $1500.");
+                return false;
+            }
+
             $specificCurrency = self::OXIPAY_NZ_CURRENCY_CODE;
         }
 
-        $order = $this->getLastRealOrder();
-
-        if($order->getTotalDue() < 20) {
+        if($total < 20) {
             Mage::getSingleton('checkout/session')->addError("Oxipay doesn't support purchases less than $20.");
             return false;
         }
