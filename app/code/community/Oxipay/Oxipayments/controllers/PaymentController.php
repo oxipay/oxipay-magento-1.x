@@ -78,8 +78,17 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
      *
      * callback - oxipay calls this once the payment process has been completed.
      */
-    public function completeAction() {
+    public function completeAction()
+    {
         $isValid = Oxipay_Oxipayments_Helper_Crypto::isValidSignature($this->getRequest()->getParams(), $this->getApiKey());
+
+        if (Mage::helper('oxipayments')->isDebugMode()) {
+            Mage::log('Order has been commpleted. The response has been post backed.', Zend_Log::DEBUG, self::LOG_FILE);
+            Mage::log('===================== RESPONSE ==============================', Zend_Log::DEBUG, self::LOG_FILE);
+            Mage::log($this->getRequest(), Zend_Log::DEBUG, self::LOG_FILE);
+            Mage::log('==================  RESPONSE END ============================', Zend_Log::DEBUG, self::LOG_FILE);
+        }
+
         $result = $this->getRequest()->get("x_result");
         $orderId = $this->getRequest()->get("x_reference");
         $transactionId = $this->getRequest()->get("x_gateway_reference");
@@ -316,6 +325,14 @@ class Oxipay_Oxipayments_PaymentController extends Mage_Core_Controller_Front_Ac
             'x_test'                       => 'false'
         );
         $apiKey    = $this->getApiKey();
+
+        if (Mage::helper('oxipayments')->isDebugMode()) {
+            Mage::log('========== REQUEST FROM MAGENTO ============', Zend_Log::DEBUG, self::LOG_FILE);
+            Mage::log($data, Zend_Log::DEBUG, self::LOG_FILE);
+            Mage::log('Api key: ' . $apiKey, Zend_Log::DEBUG, self::LOG_FILE);
+            Mage::log('========== REQUEST END =====================', Zend_Log::DEBUG, self::LOG_FILE);
+        }
+
         $signature = Oxipay_Oxipayments_Helper_Crypto::generateSignature($data, $apiKey);
         $data['x_signature'] = $signature;
 
